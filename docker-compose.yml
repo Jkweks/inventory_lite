@@ -1,0 +1,44 @@
+version: "3.8"
+
+networks:
+  internal_net:
+    driver: bridge
+
+volumes:
+  db_data:
+
+services:
+  db:
+    image: postgres:15
+    container_name: invlite_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: invuser
+      POSTGRES_PASSWORD: invpass
+      POSTGRES_DB: inventorylite
+    ports:
+      - "5442:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backend/migrations.sql:/docker-entrypoint-initdb.d/migrations.sql:ro
+    networks:
+      - internal_net
+
+  web:
+    build: ./web
+    container_name: invlite_web
+    restart: unless-stopped
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: inventorylite
+      DB_USER: invuser
+      DB_PASS: invpass
+    depends_on:
+      - db
+    ports:
+      - "7546:80"
+    volumes:
+      - ./web/public:/var/www/html
+    networks:
+      - internal_net
