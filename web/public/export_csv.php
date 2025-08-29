@@ -1,7 +1,14 @@
 <?php
-require_once __DIR__ . '/config.php'; require_once __DIR__ . '/db.php'; $pdo=db();
-$report=$_GET['report'] ?? 'snapshot';
-header('Content-Type: text/csv'); header('Content-Disposition: attachment; filename="inventory_'+$report+'_'+date('Ymd_His')+'.csv"');
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/db.php';
+$pdo = db();
+$report = $_GET['report'] ?? 'snapshot';
+$allowed_reports = ['snapshot'];
+if (!in_array($report, $allowed_reports, true)) {
+    $report = 'snapshot';
+}
+header('Content-Type: text/csv');
+header('Content-Disposition: attachment; filename="inventory_' . $report . '_' . date('Ymd_His') . '.csv"');
 $out=fopen('php://output','w');
 if($report==='snapshot'){
   fputcsv($out,['SKU','Name','Unit','On Hand','Committed','Available']);
