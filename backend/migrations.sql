@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS inventory_items (
     item_type TEXT,
     item_use TEXT,
     description TEXT,
+    cost_usd NUMERIC(12,2) DEFAULT 0,
+    sage_id VARCHAR(64),
     qty_on_hand NUMERIC(12,3) NOT NULL DEFAULT 0,
     qty_committed NUMERIC(12,3) NOT NULL DEFAULT 0,
     min_qty NUMERIC(12,3) DEFAULT 0,
