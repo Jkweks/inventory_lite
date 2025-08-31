@@ -5,38 +5,44 @@ $stmt=$pdo->prepare("SELECT * FROM inventory_items WHERE sku=?");
 $stmt->execute([$sku]);
 $item=$stmt->fetch();
 if(!$item){ echo '<div class="alert alert-danger">Item not found</div>'; return; }
-if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='update_item'){
-  $pdo->beginTransaction();
-  try{
-    $pdo->prepare("UPDATE inventory_items SET name=?,unit=?,category=?,item_type=?,item_use=?,description=?,image_url=?,cost_usd=?,sage_id=?,min_qty=?,archived=? WHERE id=?")
-        ->execute([
-          $_POST['name'],
-          $_POST['unit']?:'ea',
-          $_POST['category']?:null,
-          $_POST['item_type']?:null,
-          $_POST['item_use']?:null,
-          $_POST['description']?:null,
-          $_POST['image_url']?:null,
-          (float)$_POST['cost_usd'],
-          $_POST['sage_id']?:null,
-          (float)$_POST['min_qty'],
-          isset($_POST['archived'])?1:0,
-          $item['id']
-        ]);
-    $pdo->prepare("DELETE FROM item_locations WHERE item_id=?")->execute([$item['id']]);
-    $total=0;
-    $locations=preg_split('/\r?\n/', trim($_POST['locations']??''));
-    foreach($locations as $line){
-      $line=trim($line); if($line==='') continue;
-      if(!preg_match('/^([A-Z]\.\d+\.\d+\.\d+)=(\d+(?:\.\d+)?)$/',$line,$m)) continue;
-      $pdo->prepare("INSERT INTO item_locations (item_id,location,qty_on_hand) VALUES (?,?,?)")
-          ->execute([$item['id'],$m[1],$m[2]]);
-      $total+=$m[2];
-    }
-    $pdo->prepare("UPDATE inventory_items SET qty_on_hand=? WHERE id=?")->execute([$total,$item['id']]);
-    $pdo->commit();
-    header("Location: /index.php?p=item&sku=".urlencode($sku)."&updated=1"); exit;
-  }catch(Exception $e){ $pdo->rollBack(); throw $e; }
+if($_SERVER['REQUEST_METHOD']==='POST'){
+  $form=$_POST['form']??'';
+  if($form==='update_item'){
+    $pdo->beginTransaction();
+    try{
+      $pdo->prepare("UPDATE inventory_items SET name=?,unit=?,category=?,item_type=?,item_use=?,description=?,image_url=?,cost_usd=?,sage_id=?,min_qty=?,archived=? WHERE id=?")
+          ->execute([
+            $_POST['name'],
+            $_POST['unit']?:'ea',
+            $_POST['category']?:null,
+            $_POST['item_type']?:null,
+            $_POST['item_use']?:null,
+            $_POST['description']?:null,
+            $_POST['image_url']?:null,
+            (float)$_POST['cost_usd'],
+            $_POST['sage_id']?:null,
+            (float)$_POST['min_qty'],
+            isset($_POST['archived'])?1:0,
+            $item['id']
+          ]);
+      $pdo->prepare("DELETE FROM item_locations WHERE item_id=?")->execute([$item['id']]);
+      $total=0;
+      $locations=preg_split('/\r?\n/', trim($_POST['locations']??''));
+      foreach($locations as $line){
+        $line=trim($line); if($line==='') continue;
+        if(!preg_match('/^([A-Z]\.\d+\.\d+\.\d+)=(\d+(?:\.\d+)?)$/',$line,$m)) continue;
+        $pdo->prepare("INSERT INTO item_locations (item_id,location,qty_on_hand) VALUES (?,?,?)")
+            ->execute([$item['id'],$m[1],$m[2]]);
+        $total+=$m[2];
+      }
+      $pdo->prepare("UPDATE inventory_items SET qty_on_hand=? WHERE id=?")->execute([$total,$item['id']]);
+      $pdo->commit();
+      header("Location: /index.php?p=item&sku=".urlencode($sku)."&updated=1"); exit;
+    }catch(Exception $e){ $pdo->rollBack(); throw $e; }
+  }elseif($form==='delete_item'){
+    $pdo->prepare("DELETE FROM inventory_items WHERE id=?")->execute([$item['id']]);
+    header("Location: /index.php?p=items&deleted=1"); exit;
+  }
 }
 $locs=$pdo->prepare("SELECT location,qty_on_hand FROM item_locations WHERE item_id=? ORDER BY location");
 $locs->execute([$item['id']]);
@@ -60,4 +66,8 @@ $loc_text=implode("\n",$loc_lines);
 <div class="mb-2"><label class="form-label">Min Qty</label><input name="min_qty" type="number" step="0.001" class="form-control" value="<?= h($item['min_qty']) ?>"></div>
 <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="archived" name="archived" value="1" <?= $item['archived']?'checked':'' ?>>
 <label class="form-check-label" for="archived">Archived</label></div>
-<button class="btn btn-primary">Save</button></form></div></div>
+<button class="btn btn-primary">Save</button></form>
+<form method="post" class="mt-3" onsubmit="return confirm('Delete this item?');">
+<input type="hidden" name="form" value="delete_item">
+<button class="btn btn-outline-danger">Delete Item</button>
+</form></div></div>

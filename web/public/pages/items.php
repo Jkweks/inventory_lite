@@ -1,6 +1,8 @@
 <?php
 $pdo=db();
-if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='create_item'){
+if($_SERVER['REQUEST_METHOD']==='POST'){
+  $form=$_POST['form']??'';
+  if($form==='create_item'){
   $pdo->beginTransaction();
   try{
     $stmt=$pdo->prepare("INSERT INTO inventory_items (sku,name,unit,category,item_type,item_use,description,image_url,cost_usd,sage_id,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,?,?,?,0,0,?)");
@@ -30,10 +32,15 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='create_ite
     $pdo->commit();
     header("Location: /index.php?p=items&created=1"); exit;
   }catch(Exception $e){ $pdo->rollBack(); throw $e; }
+  }elseif($form==='delete_item'){
+    $pdo->prepare("DELETE FROM inventory_items WHERE id=?")->execute([(int)$_POST['item_id']]);
+    header("Location: /index.php?p=items&deleted=1"); exit;
+  }
 }
 $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY category, item_type, sku")->fetchAll();
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Items</h1><a href="/index.php?p=import" class="btn btn-outline-primary btn-sm">Import CSV</a></div>
+<?php if(isset($_GET['deleted'])): ?><div class="alert alert-success">Item deleted</div><?php endif; ?>
 <div class="row g-3"><div class="col-lg-5"><div class="card"><div class="card-body">
 <h2 class="h5">Add Item</h2>
 <form method="post"><input type="hidden" name="form" value="create_item">
@@ -57,6 +64,15 @@ $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY 
 <td><?= h($it['category']) ?></td><td><?= h($it['item_type']) ?></td><td><a href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>"><?= h($it['sku']) ?></a></td>
 <td><?php if($it['image_url']): ?><img src="<?= h($it['image_url']) ?>" alt="" style="width:32px;height:32px;object-fit:cover;"><?php endif; ?></td>
 <td><?= h($it['name']) ?></td>
-<td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td><td class="text-end"><?= number_fmt($it['qty_committed']) ?></td><td><a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>">Edit</a></td>
+<td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td>
+<td class="text-end"><?= number_fmt($it['qty_committed']) ?></td>
+<td>
+  <a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>">Edit</a>
+  <form method="post" class="d-inline" onsubmit="return confirm('Delete this item?');">
+    <input type="hidden" name="form" value="delete_item">
+    <input type="hidden" name="item_id" value="<?= $it['id'] ?>">
+    <button class="btn btn-sm btn-outline-danger">Delete</button>
+  </form>
+</td>
 </tr><?php endforeach; ?>
 </tbody></table></div></div></div></div></div>
