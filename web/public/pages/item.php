@@ -71,9 +71,28 @@ $locs=$pdo->prepare("SELECT location,qty_on_hand FROM item_locations WHERE item_
 $locs->execute([$item['id']]);
 $loc_lines=[]; while($row=$locs->fetch(PDO::FETCH_ASSOC)){ $loc_lines[]=$row['location'].'='.$row['qty_on_hand']; }
 $loc_text=implode("\n",$loc_lines);
+$variants=[];
+if(!$item['parent_sku']){
+  $vs=$pdo->prepare("SELECT id,sku,finish,qty_on_hand,qty_committed FROM inventory_items WHERE parent_sku=? ORDER BY sku");
+  $vs->execute([$item['sku']]);
+  $variants=$vs->fetchAll(PDO::FETCH_ASSOC);
+}
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Edit Item</h1><a href="/index.php?p=items" class="btn btn-outline-secondary btn-sm">Back</a></div>
 <?php if(isset($_GET['updated'])): ?><div class="alert alert-success">Item updated</div><?php endif; ?>
+<?php if($variants): ?><div class="card mb-3"><div class="card-body">
+  <h2 class="h5 mb-3">Variants</h2>
+  <div class="table-responsive"><table class="table table-sm align-middle">
+    <thead><tr><th>SKU</th><th>Finish</th><th class="text-end">On Hand</th><th class="text-end">Committed</th><th>Actions</th></tr></thead>
+    <tbody><?php foreach($variants as $v): ?><tr>
+      <td><a href="/index.php?p=item&id=<?= $v['id'] ?>"><?= h($v['sku']) ?></a></td>
+      <td><?= h($v['finish']) ?></td>
+      <td class="text-end"><?= number_fmt($v['qty_on_hand']) ?></td>
+      <td class="text-end"><?= number_fmt($v['qty_committed']) ?></td>
+      <td><a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&id=<?= $v['id'] ?>">Edit</a></td>
+    </tr><?php endforeach; ?></tbody>
+  </table></div>
+</div></div><?php endif; ?>
 <div class="card"><div class="card-body"><form method="post" enctype="multipart/form-data"><input type="hidden" name="form" value="update_item">
 <div class="mb-2"><label class="form-label">SKU</label><input name="sku" class="form-control" value="<?= h($item['sku']) ?>" readonly></div>
 <div class="mb-2"><label class="form-label">Parent SKU (optional)</label><input name="parent_sku" class="form-control" value="<?= h($item['parent_sku']) ?>"></div>
