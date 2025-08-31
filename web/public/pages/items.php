@@ -46,7 +46,16 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     }catch(Exception $e){ $pdo->rollBack(); throw $e; }
   }
 }
-$items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY category, item_type, sku")->fetchAll();
+$validSort=['category','item_type','sku','name','qty_on_hand','qty_committed'];
+$sort=$_GET['sort']??'category';
+if(!in_array($sort,$validSort)) $sort='category';
+$dir=strtolower($_GET['dir']??'asc')==='desc'?'desc':'asc';
+function sort_link($col,$label,$sort,$dir){
+  $newDir=($sort===$col && $dir==='asc')?'desc':'asc';
+  $indicator=$sort===$col?($dir==='asc'?'&uarr;':'&darr;'):'';
+  return "<a href=\"?p=items&sort=$col&dir=$newDir\">$label $indicator</a>";
+}
+$items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY $sort $dir, sku ASC")->fetchAll();
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">Items</h1>
@@ -58,7 +67,7 @@ $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY 
 <?php if(isset($_GET['deleted'])): ?><div class="alert alert-success">Item deleted</div><?php endif; ?>
 <div class="row g-3"><div class="col-lg-8 mx-auto"><div class="card"><div class="card-body"><h2 class="h5">All Items</h2>
 <div class="table-responsive"><table class="table table-sm table-striped align-middle">
-<thead><tr><th>Category</th><th>Type</th><th>SKU</th><th>Img</th><th>Name</th><th class="text-end">On Hand</th><th class="text-end">Committed</th><th>Actions</th></tr></thead>
+<thead><tr><th><?= sort_link('category','Category',$sort,$dir) ?></th><th><?= sort_link('item_type','Type',$sort,$dir) ?></th><th><?= sort_link('sku','SKU',$sort,$dir) ?></th><th>Img</th><th><?= sort_link('name','Name',$sort,$dir) ?></th><th class="text-end"><?= sort_link('qty_on_hand','On Hand',$sort,$dir) ?></th><th class="text-end"><?= sort_link('qty_committed','Committed',$sort,$dir) ?></th><th>Actions</th></tr></thead>
 <tbody><?php foreach($items as $it): ?><tr>
 <td><?= h($it['category']) ?></td><td><?= h($it['item_type']) ?></td><td><a href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>"><?= h($it['sku']) ?></a></td>
 <td><?php if($it['image_url']): ?><img src="<?= h($it['image_url']) ?>" alt="" style="width:32px;height:32px;object-fit:cover;"><?php endif; ?></td>
