@@ -42,7 +42,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
       $locations=preg_split('/\r?\n/', trim($_POST['locations']??''));
       foreach($locations as $line){
         $line=trim($line); if($line==='') continue;
-        if(!preg_match('/^([A-Z]\.\d+\.\d+\.\d+)=(\d+(?:\.\d+)?)$/',$line,$m)) continue;
+        if(!preg_match('/^([A-Z]\.\d+\.\d+)=(\d+(?:\.\d+)?)$/',$line,$m)) continue;
         $pdo->prepare("INSERT INTO item_locations (item_id,location,qty_on_hand) VALUES (?,?,?)")
             ->execute([$item['id'],$m[1],$m[2]]);
         $total+=$m[2];
@@ -74,7 +74,7 @@ $loc_text=implode("\n",$loc_lines);
 <div class="mb-2"><label class="form-label">Image</label><input type="file" name="image_file" class="form-control"><?php if($item['image_url']): ?><img src="<?= h($item['image_url']) ?>" alt="" class="img-thumbnail mt-2" style="width:80px;height:80px;object-fit:cover;"><?php endif; ?></div>
 <div class="mb-2"><label class="form-label">Cost (USD)</label><input name="cost_usd" type="number" step="0.01" class="form-control" value="<?= h($item['cost_usd']) ?>"></div>
 <div class="mb-2"><label class="form-label">Sage ID</label><input name="sage_id" class="form-control" value="<?= h($item['sage_id']) ?>"></div>
-<div class="mb-2"><label class="form-label">Locations (A.1.2.3=qty per line)</label><textarea name="locations" class="form-control" rows="3"><?= h($loc_text) ?></textarea></div>
+<div class="mb-2"><label class="form-label">Locations (A.1.2=qty per line)</label><textarea name="locations" class="form-control" rows="3"><?= h($loc_text) ?></textarea></div>
 <div class="mb-2"><label class="form-label">Min Qty</label><input name="min_qty" type="number" step="0.001" class="form-control" value="<?= h($item['min_qty']) ?>"></div>
 <div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="archived" name="archived" value="1" <?= $item['archived']?'checked':'' ?>>
 <label class="form-check-label" for="archived">Archived</label></div>
