@@ -14,8 +14,8 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='cycle_coun
   }catch(Exception $e){ $pdo->rollBack(); throw $e; }
 }
 $item_id_prefill=isset($_GET['item_id'])?(int)$_GET['item_id']:null;
-$items=$pdo->query("SELECT id, sku, name FROM inventory_items ORDER BY sku")->fetchAll();
-$recent=$pdo->query("SELECT c.id,i.sku,i.name,c.counted_qty,c.count_date,c.note FROM cycle_counts c JOIN inventory_items i ON i.id=c.item_id ORDER BY c.id DESC LIMIT 20")->fetchAll();
+$items=$pdo->query("SELECT id, sku, name FROM inventory_items WHERE archived=false ORDER BY sku")->fetchAll();
+$recent=$pdo->query("SELECT c.id,i.sku,i.name,c.counted_qty,c.count_date,c.note FROM cycle_counts c JOIN inventory_items i ON i.id=c.item_id WHERE i.archived=false ORDER BY c.id DESC LIMIT 20")->fetchAll();
 ?>
 <div class="row g-3"><div class="col-lg-5"><div class="card"><div class="card-body">
 <h1 class="h5 mb-3">Cycle Count</h1>

@@ -87,7 +87,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='complete_j
     header("Location: /index.php?p=jobs&view=".$job_id."&done=1"); exit;
   }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
 }
-$items=$pdo->query("SELECT id, sku, name FROM inventory_items ORDER BY sku")->fetchAll();
+$items=$pdo->query("SELECT id, sku, name FROM inventory_items WHERE archived=false ORDER BY sku")->fetchAll();
 $show_archived=isset($_GET['show_archived']);
 $job_stmt=$pdo->prepare("SELECT * FROM jobs".($show_archived?"":" WHERE archived=false")." ORDER BY created_at DESC LIMIT 50");
 $job_stmt->execute();
