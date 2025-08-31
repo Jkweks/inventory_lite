@@ -22,8 +22,10 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
           $image_url='/uploads/'.$fname;
         }
       }
-      $pdo->prepare("UPDATE inventory_items SET name=?,unit=?,category=?,item_type=?,item_use=?,description=?,image_url=?,cost_usd=?,sage_id=?,min_qty=?,archived=? WHERE id=?")
+      $pdo->prepare("UPDATE inventory_items SET parent_sku=?, finish=?, name=?,unit=?,category=?,item_type=?,item_use=?,description=?,image_url=?,cost_usd=?,sage_id=?,min_qty=?,archived=? WHERE id=?")
           ->execute([
+            $_POST['parent_sku']?:null,
+            $_POST['finish']?:null,
             $_POST['name'],
             $_POST['unit']?:'ea',
             $_POST['category']?:null,
@@ -65,6 +67,8 @@ $loc_text=implode("\n",$loc_lines);
 <?php if(isset($_GET['updated'])): ?><div class="alert alert-success">Item updated</div><?php endif; ?>
 <div class="card"><div class="card-body"><form method="post" enctype="multipart/form-data"><input type="hidden" name="form" value="update_item">
 <div class="mb-2"><label class="form-label">SKU</label><input name="sku" class="form-control" value="<?= h($item['sku']) ?>" readonly></div>
+<div class="mb-2"><label class="form-label">Parent SKU (optional)</label><input name="parent_sku" class="form-control" value="<?= h($item['parent_sku']) ?>"></div>
+<div class="mb-2"><label class="form-label">Finish</label><input name="finish" class="form-control" value="<?= h($item['finish']) ?>"></div>
 <div class="mb-2"><label class="form-label">Name</label><input name="name" class="form-control" value="<?= h($item['name']) ?>" required></div>
 <div class="mb-2"><label class="form-label">Unit</label><input name="unit" class="form-control" value="<?= h($item['unit']) ?>"></div>
 <div class="mb-2"><label class="form-label">Category</label><input name="category" class="form-control" value="<?= h($item['category']) ?>"></div>

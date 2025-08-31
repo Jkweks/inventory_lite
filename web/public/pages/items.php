@@ -1,5 +1,6 @@
 <?php
 $pdo=db();
+$variantView=$pdo->query("SELECT value FROM settings WHERE key='variant_view'")->fetchColumn() ?: 'individual';
 if($_SERVER['REQUEST_METHOD']==='POST'){
   $form=$_POST['form']??'';
   if($form==='create_item'){
@@ -17,9 +18,11 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
           $image_url='/uploads/'.$fname;
         }
       }
-      $stmt=$pdo->prepare("INSERT INTO inventory_items (sku,name,unit,category,item_type,item_use,description,image_url,cost_usd,sage_id,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,?,?,?,0,0,?)");
+      $stmt=$pdo->prepare("INSERT INTO inventory_items (sku,parent_sku,finish,name,unit,category,item_type,item_use,description,image_url,cost_usd,sage_id,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,0,0,?)");
       $stmt->execute([
         $_POST['sku'],
+        $_POST['parent_sku']?:null,
+        $_POST['finish']?:null,
         $_POST['name'],
         $_POST['unit']?:'ea',
         $_POST['category']?:null,
@@ -55,7 +58,20 @@ function sort_link($col,$label,$sort,$dir){
   $indicator=$sort===$col?($dir==='asc'?'&uarr;':'&darr;'):'';
   return "<a href=\"?p=items&sort=$col&dir=$newDir\">$label $indicator</a>";
 }
-$items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY $sort $dir, sku ASC")->fetchAll();
+if($variantView==='grouped'){
+  $sortMap=[
+    'category'=>'MIN(category)',
+    'item_type'=>'MIN(item_type)',
+    'sku'=>'sku',
+    'name'=>'MIN(name)',
+    'qty_on_hand'=>'SUM(qty_on_hand)',
+    'qty_committed'=>'SUM(qty_committed)'
+  ];
+  $sortExpr=$sortMap[$sort];
+  $items=$pdo->query("SELECT COALESCE(parent_sku,sku) AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(category) AS category, MIN(item_type) AS item_type, MIN(image_url) AS image_url, SUM(qty_on_hand) AS qty_on_hand, SUM(qty_committed) AS qty_committed FROM inventory_items WHERE archived=false GROUP BY COALESCE(parent_sku,sku) ORDER BY $sortExpr $dir, sku ASC")->fetchAll();
+}else{
+  $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY $sort $dir, sku ASC")->fetchAll();
+}
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">Items</h1>
@@ -91,6 +107,8 @@ $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY 
         <div class="modal-body">
           <input type="hidden" name="form" value="create_item">
           <div class="mb-2"><label class="form-label">SKU</label><input name="sku" class="form-control" required></div>
+          <div class="mb-2"><label class="form-label">Parent SKU (optional)</label><input name="parent_sku" class="form-control" placeholder="E4531"></div>
+          <div class="mb-2"><label class="form-label">Finish</label><input name="finish" class="form-control"></div>
           <div class="mb-2"><label class="form-label">Name</label><input name="name" class="form-control" required></div>
           <div class="mb-2"><label class="form-label">Unit</label><input name="unit" class="form-control" placeholder="ea"></div>
           <div class="mb-2"><label class="form-label">Category</label><input name="category" class="form-control"></div>

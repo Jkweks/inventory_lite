@@ -10,12 +10,12 @@ switch ($type) {
     case 'low':
         $title = 'Low Inventory';
         $tableId = 'lowTable';
-        $items = $pdo->query("SELECT sku,name,min_qty,(qty_on_hand-qty_committed) AS available FROM inventory_items WHERE archived=false AND min_qty IS NOT NULL AND (qty_on_hand-qty_committed) < min_qty ORDER BY available ASC")->fetchAll();
+        $items = $pdo->query("SELECT base_sku AS sku, MIN(name) AS name, MIN(min_qty) AS min_qty, SUM(qty_on_hand-qty_committed) AS available FROM (SELECT COALESCE(parent_sku,sku) AS base_sku, name, min_qty, qty_on_hand, qty_committed FROM inventory_items WHERE archived=false) t GROUP BY base_sku HAVING SUM(qty_on_hand-qty_committed) < MIN(min_qty) ORDER BY available ASC")->fetchAll();
         break;
     case 'accounting':
         $title = 'Inventory for Accounting';
         $tableId = 'acctTable';
-        $items = $pdo->query("SELECT sku,name,unit,cost_usd,qty_on_hand,(cost_usd*qty_on_hand) AS total FROM inventory_items WHERE archived=false ORDER BY sku")->fetchAll();
+        $items = $pdo->query("SELECT base_sku AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(cost_usd) AS cost_usd, SUM(qty_on_hand) AS qty_on_hand, SUM(cost_usd*qty_on_hand) AS total FROM (SELECT COALESCE(parent_sku,sku) AS base_sku, name, unit, cost_usd, qty_on_hand FROM inventory_items WHERE archived=false) t GROUP BY base_sku ORDER BY base_sku")->fetchAll();
         break;
     case 'cost_savings':
         $title = 'Cost Savings';
@@ -25,7 +25,7 @@ switch ($type) {
     default:
         $title = 'Full Inventory';
         $tableId = 'fullTable';
-        $items = $pdo->query("SELECT sku,name,unit,category,item_type,qty_on_hand,qty_committed,(qty_on_hand-qty_committed) AS available FROM inventory_items WHERE archived=false ORDER BY category, item_type, sku")->fetchAll();
+        $items = $pdo->query("SELECT base_sku AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(category) AS category, MIN(item_type) AS item_type, SUM(qty_on_hand) AS qty_on_hand, SUM(qty_committed) AS qty_committed, SUM(qty_on_hand-qty_committed) AS available FROM (SELECT COALESCE(parent_sku,sku) AS base_sku, name, unit, category, item_type, qty_on_hand, qty_committed FROM inventory_items WHERE archived=false) t GROUP BY base_sku ORDER BY MIN(category), MIN(item_type), base_sku")->fetchAll();
         break;
 }
 ?>
