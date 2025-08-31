@@ -68,7 +68,7 @@ if($variantView==='grouped'){
     'qty_committed'=>'SUM(qty_committed)'
   ];
   $sortExpr=$sortMap[$sort];
-  $items=$pdo->query("SELECT COALESCE(parent_sku,sku) AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(category) AS category, MIN(item_type) AS item_type, MIN(image_url) AS image_url, SUM(qty_on_hand) AS qty_on_hand, SUM(qty_committed) AS qty_committed FROM inventory_items WHERE archived=false GROUP BY COALESCE(parent_sku,sku) ORDER BY $sortExpr $dir, sku ASC")->fetchAll();
+  $items=$pdo->query("SELECT MIN(id) AS id, COALESCE(parent_sku,sku) AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(category) AS category, MIN(item_type) AS item_type, MIN(image_url) AS image_url, SUM(qty_on_hand) AS qty_on_hand, SUM(qty_committed) AS qty_committed FROM inventory_items WHERE archived=false GROUP BY COALESCE(parent_sku,sku) ORDER BY $sortExpr $dir, sku ASC")->fetchAll();
 }else{
   $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY $sort $dir, sku ASC")->fetchAll();
 }
@@ -85,13 +85,13 @@ if($variantView==='grouped'){
 <div class="table-responsive"><table class="table table-sm table-striped align-middle">
 <thead><tr><th><?= sort_link('category','Category',$sort,$dir) ?></th><th><?= sort_link('item_type','Type',$sort,$dir) ?></th><th><?= sort_link('sku','SKU',$sort,$dir) ?></th><th>Img</th><th><?= sort_link('name','Name',$sort,$dir) ?></th><th class="text-end"><?= sort_link('qty_on_hand','On Hand',$sort,$dir) ?></th><th class="text-end"><?= sort_link('qty_committed','Committed',$sort,$dir) ?></th><th>Actions</th></tr></thead>
 <tbody><?php foreach($items as $it): ?><tr>
-<td><?= h($it['category']) ?></td><td><?= h($it['item_type']) ?></td><td><a href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>"><?= h($it['sku']) ?></a></td>
+<td><?= h($it['category']) ?></td><td><?= h($it['item_type']) ?></td><td><a href="/index.php?p=item&id=<?= $it['id'] ?>"><?= h($it['sku']) ?></a></td>
 <td><?php if($it['image_url']): ?><img src="<?= h($it['image_url']) ?>" alt="" style="width:32px;height:32px;object-fit:cover;"><?php endif; ?></td>
 <td><?= h($it['name']) ?></td>
 <td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td>
 <td class="text-end"><?= number_fmt($it['qty_committed']) ?></td>
 <td>
-  <a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>">Edit</a>
+  <a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&id=<?= $it['id'] ?>">Edit</a>
 </td>
 </tr><?php endforeach; ?>
 </tbody></table></div></div></div></div></div>
