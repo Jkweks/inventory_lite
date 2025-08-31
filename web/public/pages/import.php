@@ -12,13 +12,14 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
         continue; // skip header row
       }
     }
-    $row=array_pad($row,5,null);
+    $row=array_pad($row,6,null);
     $sku=trim($row[0]);
     if($sku==='') continue;
     $type=trim($row[1] ?? '') ?: null;
     $category=trim($row[2] ?? '') ?: null;
     $use=trim($row[3] ?? '') ?: null;
     $description=trim($row[4] ?? '') ?: null;
+    $image_url=trim($row[5] ?? '') ?: null;
     $parent_sku=null;
     $finish=null;
     $pos=strrpos($sku,'-');
@@ -30,18 +31,50 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
         $finish=$fin;
       }
     }
-    $stmt=$pdo->prepare("INSERT INTO inventory_items (sku,parent_sku,finish,name,unit,category,item_type,item_use,description,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,?,?,0,0,0) ON CONFLICT (sku) DO NOTHING");
-    $stmt->execute([
-      $sku,
-      $parent_sku,
-      $finish,
-      $description,
-      'ea',
-      $category,
-      $type,
-      $use,
-      $description
-    ]);
+    if($parent_sku){
+      // ensure base part exists and capture shared fields
+      $pdo->prepare("INSERT INTO inventory_items (sku,name,unit,category,item_type,item_use,description,image_url,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?, ?,0,0,0) ON CONFLICT (sku) DO NOTHING")
+          ->execute([
+            $parent_sku,
+            $description,
+            'ea',
+            $category,
+            $type,
+            $use,
+            $description,
+            $image_url
+          ]);
+      $base=$pdo->prepare("SELECT name,unit,category,item_type,item_use,description,image_url FROM inventory_items WHERE sku=?");
+      $base->execute([$parent_sku]);
+      $base_data=$base->fetch(PDO::FETCH_ASSOC);
+      $pdo->prepare("INSERT INTO inventory_items (sku,parent_sku,finish,name,unit,category,item_type,item_use,description,image_url,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,?,?,?,0,0,0) ON CONFLICT (sku) DO NOTHING")
+          ->execute([
+            $sku,
+            $parent_sku,
+            $finish,
+            $base_data['name'] ?? $description,
+            $base_data['unit'] ?? 'ea',
+            $base_data['category'] ?? $category,
+            $base_data['item_type'] ?? $type,
+            $base_data['item_use'] ?? $use,
+            $base_data['description'] ?? $description,
+            $base_data['image_url'] ?? $image_url
+          ]);
+    } else {
+      $pdo->prepare("INSERT INTO inventory_items (sku,parent_sku,finish,name,unit,category,item_type,item_use,description,image_url,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,?,?,?,0,0,0) ON CONFLICT (sku) DO NOTHING")
+          ->execute([
+            $sku,
+            null,
+            null,
+            $description,
+            'ea',
+            $category,
+            $type,
+            $use,
+            $description,
+            $image_url
+          ]);
+    }
   }
   fclose($handle);
   $message='Import complete';
