@@ -19,9 +19,22 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
     $category=trim($row[2] ?? '') ?: null;
     $use=trim($row[3] ?? '') ?: null;
     $description=trim($row[4] ?? '') ?: null;
-    $stmt=$pdo->prepare("INSERT INTO inventory_items (sku,name,unit,category,item_type,item_use,description,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,0,0,0) ON CONFLICT (sku) DO NOTHING");
+    $parent_sku=null;
+    $finish=null;
+    $pos=strrpos($sku,'-');
+    if($pos!==false){
+      $base=substr($sku,0,$pos);
+      $fin=strtoupper(substr($sku,$pos+1));
+      if(in_array($fin,['DB','C2','BL','OR'],true)){
+        $parent_sku=$base;
+        $finish=$fin;
+      }
+    }
+    $stmt=$pdo->prepare("INSERT INTO inventory_items (sku,parent_sku,finish,name,unit,category,item_type,item_use,description,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,?,?,0,0,0) ON CONFLICT (sku) DO NOTHING");
     $stmt->execute([
       $sku,
+      $parent_sku,
+      $finish,
       $description,
       'ea',
       $category,
