@@ -2,11 +2,13 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS inventory_items (
     id SERIAL PRIMARY KEY,
     sku VARCHAR(64) UNIQUE NOT NULL,
+    parent_sku VARCHAR(64),
     name TEXT NOT NULL,
     unit VARCHAR(16) DEFAULT 'ea',
     category TEXT,
     item_type TEXT,
     item_use TEXT,
+    finish TEXT,
     description TEXT,
     image_url TEXT,
     cost_usd NUMERIC(12,2) DEFAULT 0,
