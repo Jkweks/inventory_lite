@@ -1,1 +1,49 @@
-(function(){const t=document.getElementById('themeSwitch');function s(e){document.documentElement.setAttribute('data-bs-theme',e),localStorage.setItem('theme',e)}const a=localStorage.getItem('theme')||'dark';s(a),t&&(t.checked=a==='light',t.addEventListener('change',()=>s(t.checked?'light':'dark')));window.exportTableToPDF=function(e,n){const{ jsPDF:o }=window.jspdf,d=new o({orientation:'landscape',unit:'pt',format:'letter'}),l=document.getElementById(e);if(!l)return alert('Table not found');let r=40;d.setFontSize(14),d.text(n||'Inventory Report',40,r),r+=20;const i=[],c=[];l.querySelectorAll('thead th').forEach(h=>c.push(h.innerText.trim())),l.querySelectorAll('tbody tr').forEach(h=>{const m=[];h.querySelectorAll('td').forEach(u=>m.push(u.innerText.trim())),i.push(m)});const f=150;let p=40;c.forEach((h,m)=>{d.text(h,p+m*f,r)}),r+=14,i.forEach(h=>{h.forEach((m,u)=>d.text(String(m),p+u*f,r)),r+=14,r>540&&(d.addPage(),r=40)}),d.save((n||'report')+'.pdf')}})();
+(function(){
+  const themeSwitch = document.getElementById('themeSwitch');
+  function setTheme(theme){
+    document.documentElement.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('theme', theme);
+  }
+  const initial = localStorage.getItem('theme') || 'dark';
+  setTheme(initial);
+  if(themeSwitch){
+    themeSwitch.checked = initial === 'light';
+    themeSwitch.addEventListener('change', ()=> setTheme(themeSwitch.checked ? 'light' : 'dark'));
+  }
+
+  window.exportTableToPDF = function(tableId, title){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({orientation:'landscape', unit:'pt', format:'letter'});
+    const table = document.getElementById(tableId);
+    if(!table) return alert('Table not found');
+    let y = 40;
+    doc.setFontSize(16);
+    doc.text(title || 'Inventory Report', 40, y);
+    y += 20;
+    const headers = [];
+    table.querySelectorAll('thead th').forEach(th => headers.push(th.innerText.trim()));
+    const rows = [];
+    table.querySelectorAll('tbody tr').forEach(tr => {
+      const row = [];
+      tr.querySelectorAll('td').forEach(td => row.push(td.innerText.trim()));
+      rows.push(row);
+    });
+    const colWidth = 720 / headers.length;
+    doc.setFont('helvetica','bold');
+    headers.forEach((h,i)=> doc.text(h, 40 + i*colWidth, y));
+    doc.line(40, y+2, 40 + headers.length*colWidth, y+2);
+    y += 14;
+    doc.setFont('helvetica','normal');
+    rows.forEach(r => {
+      r.forEach((cell,i)=> doc.text(String(cell), 40 + i*colWidth, y));
+      doc.line(40, y+2, 40 + headers.length*colWidth, y+2);
+      y += 14;
+      if(y > 540){
+        doc.addPage();
+        y = 40;
+      }
+    });
+    doc.save((title || 'report') + '.pdf');
+  };
+})();
+

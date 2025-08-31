@@ -13,6 +13,7 @@
 <li class="nav-item"><a class="nav-link" href="/index.php?p=jobs">Jobs</a></li>
 <li class="nav-item"><a class="nav-link" href="/index.php?p=cycle_counts">Cycle Counts</a></li>
 <li class="nav-item"><a class="nav-link" href="/index.php?p=reports">Reports</a></li>
+<li class="nav-item"><a class="nav-link" href="/index.php?p=report_designer">Report Designer</a></li>
 <li class="nav-item"><a class="nav-link" href="/index.php?p=settings">Settings</a></li>
 </ul>
 <div class="form-check form-switch"><input class="form-check-input" type="checkbox" role="switch" id="themeSwitch"><label class="form-check-label" for="themeSwitch">Light</label></div>
