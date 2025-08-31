@@ -25,7 +25,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
     if($pos!==false){
       $base=substr($sku,0,$pos);
       $fin=strtoupper(substr($sku,$pos+1));
-      if(in_array($fin,['DB','C2','BL','OR'],true)){
+      if(in_array($fin,['DB','C2','BL','0R'],true)){
         $parent_sku=$base;
         $finish=$fin;
       }
