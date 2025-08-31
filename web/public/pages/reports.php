@@ -1,6 +1,6 @@
 <?php
 $pdo=db();
-$items=$pdo->query("SELECT sku,name,unit,category,item_type,qty_on_hand,qty_committed,(qty_on_hand-qty_committed) AS available FROM inventory_items ORDER BY category, item_type, sku")->fetchAll();
+$items=$pdo->query("SELECT sku,name,unit,category,item_type,qty_on_hand,qty_committed,(qty_on_hand-qty_committed) AS available FROM inventory_items WHERE archived=false ORDER BY category, item_type, sku")->fetchAll();
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Reports</h1>
 <div class="d-flex gap-2"><a class="btn btn-outline-primary btn-sm" href="/export_csv.php?report=snapshot">Export CSV</a>

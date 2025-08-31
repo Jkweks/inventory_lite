@@ -1,6 +1,6 @@
 <?php
 $pdo=db();
-$items=$pdo->query("SELECT id, sku, name, unit, category, item_type, qty_on_hand, qty_committed, (qty_on_hand - qty_committed) AS available FROM inventory_items ORDER BY category, item_type, sku")->fetchAll();
+$items=$pdo->query("SELECT id, sku, name, unit, category, item_type, image_url, qty_on_hand, qty_committed, (qty_on_hand - qty_committed) AS available FROM inventory_items WHERE archived=false ORDER BY category, item_type, sku")->fetchAll();
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Dashboard</h1>
 <div><a href="/index.php?p=items" class="btn btn-primary btn-sm">New Item</a>
@@ -18,7 +18,7 @@ $items=$pdo->query("SELECT id, sku, name, unit, category, item_type, qty_on_hand
 <?php } ?>
 <tr class="<?= ($short_onhand||$short_avail)?'table-danger':'' ?>">
 <td><?= h($it['sku']) ?></td>
-<td><?= h($it['name']) ?> <span class="text-secondary">(<?= h($it['unit']) ?>)</span></td>
+<td><?php if($it['image_url']): ?><img src="<?= h($it['image_url']) ?>" alt="" style="width:32px;height:32px;object-fit:cover;" class="me-1"><?php endif; ?><?= h($it['name']) ?> <span class="text-secondary">(<?= h($it['unit']) ?>)</span></td>
 <td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td>
 <td class="text-end"><?= number_fmt($it['qty_committed']) ?></td>
 <td class="text-end"><?= number_fmt($it['available']) ?></td>

@@ -8,7 +8,7 @@ if(!$item){ echo '<div class="alert alert-danger">Item not found</div>'; return;
 if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='update_item'){
   $pdo->beginTransaction();
   try{
-    $pdo->prepare("UPDATE inventory_items SET name=?,unit=?,category=?,item_type=?,item_use=?,description=?,cost_usd=?,sage_id=?,min_qty=? WHERE id=?")
+    $pdo->prepare("UPDATE inventory_items SET name=?,unit=?,category=?,item_type=?,item_use=?,description=?,image_url=?,cost_usd=?,sage_id=?,min_qty=?,archived=? WHERE id=?")
         ->execute([
           $_POST['name'],
           $_POST['unit']?:'ea',
@@ -16,9 +16,11 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='update_ite
           $_POST['item_type']?:null,
           $_POST['item_use']?:null,
           $_POST['description']?:null,
+          $_POST['image_url']?:null,
           (float)$_POST['cost_usd'],
           $_POST['sage_id']?:null,
           (float)$_POST['min_qty'],
+          isset($_POST['archived'])?1:0,
           $item['id']
         ]);
     $pdo->prepare("DELETE FROM item_locations WHERE item_id=?")->execute([$item['id']]);
@@ -51,8 +53,11 @@ $loc_text=implode("\n",$loc_lines);
 <div class="mb-2"><label class="form-label">Type</label><input name="item_type" class="form-control" value="<?= h($item['item_type']) ?>"></div>
 <div class="mb-2"><label class="form-label">Use</label><input name="item_use" class="form-control" value="<?= h($item['item_use']) ?>"></div>
 <div class="mb-2"><label class="form-label">Description</label><input name="description" class="form-control" value="<?= h($item['description']) ?>"></div>
+<div class="mb-2"><label class="form-label">Image URL</label><input name="image_url" class="form-control" value="<?= h($item['image_url']) ?>" placeholder="https://..."></div>
 <div class="mb-2"><label class="form-label">Cost (USD)</label><input name="cost_usd" type="number" step="0.01" class="form-control" value="<?= h($item['cost_usd']) ?>"></div>
 <div class="mb-2"><label class="form-label">Sage ID</label><input name="sage_id" class="form-control" value="<?= h($item['sage_id']) ?>"></div>
 <div class="mb-2"><label class="form-label">Locations (A.1.2.3=qty per line)</label><textarea name="locations" class="form-control" rows="3"><?= h($loc_text) ?></textarea></div>
 <div class="mb-2"><label class="form-label">Min Qty</label><input name="min_qty" type="number" step="0.001" class="form-control" value="<?= h($item['min_qty']) ?>"></div>
+<div class="form-check mb-3"><input class="form-check-input" type="checkbox" id="archived" name="archived" value="1" <?= $item['archived']?'checked':'' ?>>
+<label class="form-check-label" for="archived">Archived</label></div>
 <button class="btn btn-primary">Save</button></form></div></div>
