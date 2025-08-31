@@ -10,6 +10,18 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   if($form==='update_item'){
     $pdo->beginTransaction();
     try{
+      $image_url=$item['image_url'];
+      if(!empty($_FILES['image_file']['tmp_name'])){
+        $img=@imagecreatefromstring(file_get_contents($_FILES['image_file']['tmp_name']));
+        if($img){
+          $dir=dirname(__DIR__).'/uploads';
+          if(!is_dir($dir)) mkdir($dir,0777,true);
+          $fname=uniqid().'.jpg';
+          imagejpeg($img,$dir.'/'.$fname);
+          imagedestroy($img);
+          $image_url='/uploads/'.$fname;
+        }
+      }
       $pdo->prepare("UPDATE inventory_items SET name=?,unit=?,category=?,item_type=?,item_use=?,description=?,image_url=?,cost_usd=?,sage_id=?,min_qty=?,archived=? WHERE id=?")
           ->execute([
             $_POST['name'],
@@ -18,7 +30,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             $_POST['item_type']?:null,
             $_POST['item_use']?:null,
             $_POST['description']?:null,
-            $_POST['image_url']?:null,
+            $image_url,
             (float)$_POST['cost_usd'],
             $_POST['sage_id']?:null,
             (float)$_POST['min_qty'],
@@ -51,7 +63,7 @@ $loc_text=implode("\n",$loc_lines);
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h3 mb-0">Edit Item</h1><a href="/index.php?p=items" class="btn btn-outline-secondary btn-sm">Back</a></div>
 <?php if(isset($_GET['updated'])): ?><div class="alert alert-success">Item updated</div><?php endif; ?>
-<div class="card"><div class="card-body"><form method="post"><input type="hidden" name="form" value="update_item">
+<div class="card"><div class="card-body"><form method="post" enctype="multipart/form-data"><input type="hidden" name="form" value="update_item">
 <div class="mb-2"><label class="form-label">SKU</label><input name="sku" class="form-control" value="<?= h($item['sku']) ?>" readonly></div>
 <div class="mb-2"><label class="form-label">Name</label><input name="name" class="form-control" value="<?= h($item['name']) ?>" required></div>
 <div class="mb-2"><label class="form-label">Unit</label><input name="unit" class="form-control" value="<?= h($item['unit']) ?>"></div>
@@ -59,7 +71,7 @@ $loc_text=implode("\n",$loc_lines);
 <div class="mb-2"><label class="form-label">Type</label><input name="item_type" class="form-control" value="<?= h($item['item_type']) ?>"></div>
 <div class="mb-2"><label class="form-label">Use</label><input name="item_use" class="form-control" value="<?= h($item['item_use']) ?>"></div>
 <div class="mb-2"><label class="form-label">Description</label><input name="description" class="form-control" value="<?= h($item['description']) ?>"></div>
-<div class="mb-2"><label class="form-label">Image URL</label><input name="image_url" class="form-control" value="<?= h($item['image_url']) ?>" placeholder="https://..."></div>
+<div class="mb-2"><label class="form-label">Image</label><input type="file" name="image_file" class="form-control"><?php if($item['image_url']): ?><img src="<?= h($item['image_url']) ?>" alt="" class="img-thumbnail mt-2" style="width:80px;height:80px;object-fit:cover;"><?php endif; ?></div>
 <div class="mb-2"><label class="form-label">Cost (USD)</label><input name="cost_usd" type="number" step="0.01" class="form-control" value="<?= h($item['cost_usd']) ?>"></div>
 <div class="mb-2"><label class="form-label">Sage ID</label><input name="sage_id" class="form-control" value="<?= h($item['sage_id']) ?>"></div>
 <div class="mb-2"><label class="form-label">Locations (A.1.2.3=qty per line)</label><textarea name="locations" class="form-control" rows="3"><?= h($loc_text) ?></textarea></div>
