@@ -68,7 +68,7 @@ if($variantView==='grouped'){
     'qty_committed'=>'SUM(qty_committed)'
   ];
   $sortExpr=$sortMap[$sort];
-  $items=$pdo->query("SELECT MIN(id) AS id, COALESCE(parent_sku,sku) AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(category) AS category, MIN(item_type) AS item_type, MIN(image_url) AS image_url, SUM(qty_on_hand) AS qty_on_hand, SUM(qty_committed) AS qty_committed FROM inventory_items WHERE archived=false GROUP BY COALESCE(parent_sku,sku) ORDER BY $sortExpr $dir, sku ASC")->fetchAll();
+  $items=$pdo->query("SELECT COALESCE(MIN(CASE WHEN parent_sku IS NULL THEN id END), MIN(id)) AS id, COALESCE(parent_sku,sku) AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(category) AS category, MIN(item_type) AS item_type, MIN(image_url) AS image_url, SUM(qty_on_hand) AS qty_on_hand, SUM(qty_committed) AS qty_committed FROM inventory_items WHERE archived=false GROUP BY COALESCE(parent_sku,sku) ORDER BY $sortExpr $dir, sku ASC")->fetchAll();
 }else{
   $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false ORDER BY $sort $dir, sku ASC")->fetchAll();
 }
