@@ -1,9 +1,18 @@
 <?php
 $pdo=db();
-$sku=$_GET['sku']??'';
-$stmt=$pdo->prepare("SELECT * FROM inventory_items WHERE sku=?");
-$stmt->execute([$sku]);
-$item=$stmt->fetch();
+$id=$_GET['id']??($_GET['item_id']??null);
+if($id){
+  $stmt=$pdo->prepare("SELECT * FROM inventory_items WHERE id=?");
+  $stmt->execute([$id]);
+  $item=$stmt->fetch();
+  $sku=$item['sku']??'';
+}else{
+  $sku=$_GET['sku']??'';
+  $stmt=$pdo->prepare("SELECT * FROM inventory_items WHERE sku=?");
+  $stmt->execute([$sku]);
+  $item=$stmt->fetch();
+  $id=$item['id']??null;
+}
 if(!$item){ echo '<div class="alert alert-danger">Item not found</div>'; return; }
 if($_SERVER['REQUEST_METHOD']==='POST'){
   $form=$_POST['form']??'';
@@ -51,7 +60,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
       }
       $pdo->prepare("UPDATE inventory_items SET qty_on_hand=? WHERE id=?")->execute([$total,$item['id']]);
       $pdo->commit();
-      header("Location: /index.php?p=item&sku=".urlencode($sku)."&updated=1"); exit;
+      header("Location: /index.php?p=item&id=".$item['id']."&updated=1"); exit;
     }catch(Exception $e){ $pdo->rollBack(); throw $e; }
   }elseif($form==='delete_item'){
     $pdo->prepare("DELETE FROM inventory_items WHERE id=?")->execute([$item['id']]);
