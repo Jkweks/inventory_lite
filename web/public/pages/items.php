@@ -50,9 +50,9 @@ $items=$pdo->query("SELECT * FROM inventory_items ORDER BY category, item_type, 
 <button class="btn btn-primary">Save</button></form></div></div></div>
 <div class="col-lg-7"><div class="card"><div class="card-body"><h2 class="h5">All Items</h2>
 <div class="table-responsive"><table class="table table-sm table-striped align-middle">
-<thead><tr><th>Category</th><th>Type</th><th>SKU</th><th>Name</th><th class="text-end">On Hand</th><th class="text-end">Committed</th></tr></thead>
+<thead><tr><th>Category</th><th>Type</th><th>SKU</th><th>Name</th><th class="text-end">On Hand</th><th class="text-end">Committed</th><th>Actions</th></tr></thead>
 <tbody><?php foreach($items as $it): ?><tr>
 <td><?= h($it['category']) ?></td><td><?= h($it['item_type']) ?></td><td><a href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>"><?= h($it['sku']) ?></a></td><td><?= h($it['name']) ?></td>
-<td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td><td class="text-end"><?= number_fmt($it['qty_committed']) ?></td>
+<td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td><td class="text-end"><?= number_fmt($it['qty_committed']) ?></td><td><a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>">Edit</a></td>
 </tr><?php endforeach; ?>
 </tbody></table></div></div></div></div></div>

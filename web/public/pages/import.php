@@ -3,18 +3,31 @@ $pdo=db();
 $message=null;
 if($_SERVER['REQUEST_METHOD']==='POST' && isset($_FILES['csv'])){
   $handle=fopen($_FILES['csv']['tmp_name'],'r');
-  $headers=array_map('strtolower',fgetcsv($handle));
+  $first=true;
   while(($row=fgetcsv($handle))!==false){
-    $data=array_combine($headers,$row);
+    if($first){
+      $first=false;
+      $chk=strtolower(trim($row[0] ?? ''));
+      if($chk==='part number' || $chk==='sku' || $chk==='part number or sku'){
+        continue; // skip header row
+      }
+    }
+    $row=array_pad($row,5,null);
+    $sku=trim($row[0]);
+    if($sku==='') continue;
+    $type=trim($row[1] ?? '') ?: null;
+    $category=trim($row[2] ?? '') ?: null;
+    $use=trim($row[3] ?? '') ?: null;
+    $description=trim($row[4] ?? '') ?: null;
     $stmt=$pdo->prepare("INSERT INTO inventory_items (sku,name,unit,category,item_type,item_use,description,qty_on_hand,qty_committed,min_qty) VALUES (?,?,?,?,?,?,?,0,0,0) ON CONFLICT (sku) DO NOTHING");
     $stmt->execute([
-      $data['part number']??'',
-      $data['description']??'',
+      $sku,
+      $description,
       'ea',
-      $data['category']??null,
-      $data['type']??null,
-      $data['use']??null,
-      $data['description']??null
+      $category,
+      $type,
+      $use,
+      $description
     ]);
   }
   fclose($handle);
