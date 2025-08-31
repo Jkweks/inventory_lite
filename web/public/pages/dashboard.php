@@ -23,7 +23,8 @@ $items=$pdo->query("SELECT id, sku, name, unit, category, item_type, qty_on_hand
 <td class="text-end"><?= number_fmt($it['qty_committed']) ?></td>
 <td class="text-end"><?= number_fmt($it['available']) ?></td>
 <td><?php if($short_onhand): ?><span class="badge badge-short">NEG On Hand</span><?php endif; ?><?php if($short_avail): ?><span class="badge text-bg-danger">Over-committed</span><?php endif; ?></td>
-<td><a class="btn btn-sm btn-outline-primary" href="/index.php?p=cycle_counts&item_id=<?= $it['id'] ?>">Count</a>
+<td><a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&sku=<?= urlencode($it['sku']) ?>">Edit</a>
+<a class="btn btn-sm btn-outline-primary" href="/index.php?p=cycle_counts&item_id=<?= $it['id'] ?>">Count</a>
 <a class="btn btn-sm btn-outline-success" href="/index.php?p=jobs&action=add_material&item_id=<?= $it['id'] ?>">Commit</a></td>
 </tr>
 <?php endforeach; ?>
