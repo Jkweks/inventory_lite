@@ -19,6 +19,10 @@ $recent=$pdo->query("SELECT c.id,i.sku,i.name,c.counted_qty,c.count_date,c.note 
 ?>
 <div class="row g-3"><div class="col-lg-5"><div class="card"><div class="card-body">
 <h1 class="h5 mb-3">Cycle Count</h1>
+<div class="mb-2">
+<a href="/index.php?p=cycle_count_sheet" class="btn btn-sm btn-outline-secondary" target="_blank">Printable Worksheet</a>
+<a href="/index.php?p=cycle_count_import" class="btn btn-sm btn-outline-secondary ms-2">Import Counts</a>
+</div>
 <form method="post"><input type="hidden" name="form" value="cycle_count">
 <div class="mb-2"><label class="form-label">Item</label><select name="item_id" class="form-select" required>
 <option value="">Select item…</option><?php foreach($items as $it): ?><option value="<?= $it['id'] ?>" <?= $item_id_prefill===$it['id']?'selected':'' ?>><?= h($it['sku']) ?> — <?= h($it['name']) ?></option><?php endforeach; ?></select></div>

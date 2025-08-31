@@ -53,6 +53,14 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='update_sta
   $stmt->execute([$new_status,$job_id]);
   header("Location: /index.php?p=jobs&view=".$job_id); exit;
 }
+if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='archive_job'){
+  $job_id=(int)$_POST['job_id'];
+  $archived=isset($_POST['archived'])?1:0;
+  $stmt=$pdo->prepare("UPDATE jobs SET archived=? WHERE id=?");
+  $stmt->execute([$archived,$job_id]);
+  $redir="/index.php?p=jobs".($archived?"&show_archived=1":"");
+  header("Location: $redir&view=".$job_id); exit;
+}
 if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='complete_job'){
   $job_id=(int)$_POST['job_id'];
   $pdo->beginTransaction();
@@ -80,7 +88,10 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='complete_j
   }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
 }
 $items=$pdo->query("SELECT id, sku, name FROM inventory_items ORDER BY sku")->fetchAll();
-$jobs=$pdo->query("SELECT * FROM jobs ORDER BY created_at DESC LIMIT 50")->fetchAll();
+$show_archived=isset($_GET['show_archived']);
+$job_stmt=$pdo->prepare("SELECT * FROM jobs".($show_archived?"":" WHERE archived=false")." ORDER BY created_at DESC LIMIT 50");
+$job_stmt->execute();
+$jobs=$job_stmt->fetchAll();
 $view_job=null;
 if(isset($_GET['view'])){
   $jid=(int)$_GET['view']; $st=$pdo->prepare("SELECT * FROM jobs WHERE id=?"); $st->execute([$jid]); $view_job=$st->fetch();
@@ -104,6 +115,11 @@ if(isset($_GET['view'])){
     </div></div>
     <div class="card"><div class="card-body">
       <h2 class="h6">Recent Jobs</h2>
+      <form method="get" class="form-check mb-2">
+        <input type="hidden" name="p" value="jobs">
+        <input class="form-check-input" type="checkbox" id="show_archived" name="show_archived" value="1" <?= $show_archived?'checked':'' ?> onchange="this.form.submit()">
+        <label class="form-check-label" for="show_archived">Show Archived</label>
+      </form>
       <div class="table-responsive"><table class="table table-sm table-striped">
         <thead><tr><th>Job #</th><th>Name</th><th>Status</th><th>Date Released</th><th></th></tr></thead>
         <tbody><?php foreach($jobs as $j): ?><tr>
@@ -132,6 +148,21 @@ if(isset($_GET['view'])){
               </select>
               </form>
             <span class="badge text-bg-<?= $view_job['status']==='complete'?'success':'secondary' ?> ms-1"><?= h($view_job['status']) ?></span>
+            <?php if(!$view_job['archived']): ?>
+              <form method="post" class="d-inline ms-2">
+                <input type="hidden" name="form" value="archive_job">
+                <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
+                <input type="hidden" name="archived" value="1">
+                <button class="btn btn-outline-secondary btn-sm">Archive</button>
+              </form>
+            <?php else: ?>
+              <form method="post" class="d-inline ms-2">
+                <input type="hidden" name="form" value="archive_job">
+                <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
+                <input type="hidden" name="archived" value="0">
+                <button class="btn btn-outline-secondary btn-sm">Unarchive</button>
+              </form>
+            <?php endif; ?>
           </div>
         </div>
         <form method="post" class="row gy-2 gx-2 align-items-end">
