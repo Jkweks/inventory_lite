@@ -41,3 +41,9 @@ IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_inventory
 IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_jobs') THEN CREATE TRIGGER set_updated_at_jobs BEFORE UPDATE ON jobs FOR EACH ROW EXECUTE PROCEDURE set_updated_at(); END IF;
 IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'set_updated_at_job_materials') THEN CREATE TRIGGER set_updated_at_job_materials BEFORE UPDATE ON job_materials FOR EACH ROW EXECUTE PROCEDURE set_updated_at(); END IF;
 END $$;
+
+-- Ensure application user has read access to all tables and sequences
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO invuser;
+GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO invuser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO invuser;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO invuser;
