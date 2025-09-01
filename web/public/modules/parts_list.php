@@ -4,7 +4,7 @@ $variantView=$pdo->query("SELECT value FROM settings WHERE key='variant_view'")-
 if($variantView==='grouped'){
   $items=$pdo->query("SELECT MIN(id) AS id, COALESCE(parent_sku,sku) AS sku, MIN(name) AS name, MIN(unit) AS unit, MIN(category) AS category, MIN(item_type) AS item_type, MIN(image_url) AS image_url, SUM(qty_on_hand) AS qty_on_hand, SUM(qty_committed) AS qty_committed, SUM(qty_on_hand-qty_committed) AS available FROM inventory_items WHERE archived=false GROUP BY COALESCE(parent_sku,sku) ORDER BY MIN(category), MIN(item_type), sku")->fetchAll();
 }else{
-  $items=$pdo->query("SELECT id, sku, name, unit, category, item_type, image_url, qty_on_hand, qty_committed, (qty_on_hand - qty_committed) AS available FROM inventory_items WHERE archived=false ORDER BY category, item_type, sku")->fetchAll();
+  $items=$pdo->query("SELECT id, sku, name, unit, category, item_type, image_url, qty_on_hand, qty_committed, (qty_on_hand - qty_committed) AS available FROM inventory_items WHERE archived=false AND sku NOT IN (SELECT parent_sku FROM inventory_items WHERE parent_sku IS NOT NULL) ORDER BY category, item_type, sku")->fetchAll();
 }
 ?>
 <div class="card mb-3"><div class="card-body">
