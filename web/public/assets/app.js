@@ -16,10 +16,18 @@
     const doc = new jsPDF({orientation:'landscape', unit:'pt', format:'letter'});
     const table = document.getElementById(tableId);
     if(!table) return alert('Table not found');
-    let y = 40;
+
+    const margin = 40;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const usableWidth = pageWidth - margin*2;
+    const rowHeight = 20;
+
     doc.setFontSize(16);
-    doc.text(title || 'Inventory Report', 40, y);
-    y += 20;
+    let y = margin;
+    doc.text(title || 'Inventory Report', margin, y);
+    y += 30;
+
     const headers = [];
     table.querySelectorAll('thead th').forEach(th => headers.push(th.innerText.trim()));
     const rows = [];
@@ -28,21 +36,34 @@
       tr.querySelectorAll('td').forEach(td => row.push(td.innerText.trim()));
       rows.push(row);
     });
-    const colWidth = 720 / headers.length;
-    doc.setFont('helvetica','bold');
-    headers.forEach((h,i)=> doc.text(h, 40 + i*colWidth, y));
-    doc.line(40, y+2, 40 + headers.length*colWidth, y+2);
-    y += 14;
-    doc.setFont('helvetica','normal');
+    const colWidth = usableWidth / headers.length;
+
+    function drawHeader(){
+      doc.setFontSize(12);
+      doc.setFont('helvetica','bold');
+      headers.forEach((h,i)=>{
+        doc.rect(margin + i*colWidth, y, colWidth, rowHeight);
+        doc.text(h, margin + i*colWidth + 2, y + 14);
+      });
+      doc.setFont('helvetica','normal');
+      y += rowHeight;
+    }
+
+    drawHeader();
+
     rows.forEach(r => {
-      r.forEach((cell,i)=> doc.text(String(cell), 40 + i*colWidth, y));
-      doc.line(40, y+2, 40 + headers.length*colWidth, y+2);
-      y += 14;
-      if(y > 540){
+      if(y + rowHeight > pageHeight - margin){
         doc.addPage();
-        y = 40;
+        y = margin;
+        drawHeader();
       }
+      r.forEach((cell,i)=>{
+        doc.rect(margin + i*colWidth, y, colWidth, rowHeight);
+        doc.text(String(cell), margin + i*colWidth + 2, y + 14);
+      });
+      y += rowHeight;
     });
+
     doc.save((title || 'report') + '.pdf');
   };
 })();
