@@ -21,12 +21,13 @@
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const usableWidth = pageWidth - margin*2;
-    const rowHeight = 20;
+    const rowHeight = 12;
 
     doc.setFontSize(16);
     let y = margin;
     doc.text(title || 'Inventory Report', margin, y);
-    y += 30;
+    y += 24;
+    doc.setFontSize(10);
 
     const headers = [];
     table.querySelectorAll('thead th').forEach(th => headers.push(th.innerText.trim()));
@@ -39,11 +40,10 @@
     const colWidth = usableWidth / headers.length;
 
     function drawHeader(){
-      doc.setFontSize(12);
       doc.setFont('helvetica','bold');
       headers.forEach((h,i)=>{
         doc.rect(margin + i*colWidth, y, colWidth, rowHeight);
-        doc.text(h, margin + i*colWidth + 2, y + 14);
+        doc.text(h, margin + i*colWidth + 2, y + rowHeight - 3);
       });
       doc.setFont('helvetica','normal');
       y += rowHeight;
@@ -59,7 +59,7 @@
       }
       r.forEach((cell,i)=>{
         doc.rect(margin + i*colWidth, y, colWidth, rowHeight);
-        doc.text(String(cell), margin + i*colWidth + 2, y + 14);
+        doc.text(String(cell), margin + i*colWidth + 2, y + rowHeight - 3);
       });
       y += rowHeight;
     });
