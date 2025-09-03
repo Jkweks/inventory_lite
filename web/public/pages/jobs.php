@@ -31,6 +31,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_mat
     require_once __DIR__.'/../modules/job_material_import.php';
     try{
       $rows=parse_job_materials_xlsx($_FILES['xlsx']['tmp_name']);
+      $imported=0;
       foreach($rows as $r){
         $qty=max(0,(float)$r[0]);
         $base=trim($r[1] ?? '');
@@ -52,6 +53,10 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_mat
         $note=$over_commit>0?('Commit to job (OVER by '.$over_commit.')'):'Commit to job';
         $pdo->prepare("INSERT INTO inventory_txns (item_id,txn_type,qty_delta,ref_table,ref_id,note) VALUES (?,?,?,?,?,?)")->execute([$item_id,'job_release',0,'jobs',$job_id,$note]);
         $pdo->commit();
+        $imported++;
+      }
+      if($imported===0){
+        throw new Exception('No materials were imported');
       }
       header("Location: /index.php?p=jobs&view=".$job_id."&imp=1"); exit;
     }catch(Exception $e){ $err=$e->getMessage(); }
