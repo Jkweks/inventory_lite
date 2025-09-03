@@ -57,7 +57,8 @@ function parse_job_materials_xlsx(string $path): array {
         if(!$sx || !isset($sx->sheetData)) continue;
         foreach($sx->sheetData->row as $row){
             $r=(int)$row['r'];
-            if($r<11) continue;
+
+            if($r<=10) continue; // skip header rows
             $vals=['A'=>null,'B'=>null,'C'=>null];
             foreach($row->c as $c){
                 $ref=(string)$c['r'];
