@@ -8,6 +8,9 @@ function parse_job_materials_xlsx(string $path): array {
         'Stock Length (2)',
         'Stock Length (3)'
     ];
+    if (!class_exists('ZipArchive')) {
+        throw new Exception('ZipArchive extension not installed');
+    }
     $zip = new ZipArchive();
     if($zip->open($path)!==true){
         throw new Exception('Unable to open spreadsheet');
