@@ -33,6 +33,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_mat
       $rows=parse_job_materials_xlsx($_FILES['xlsx']['tmp_name']);
       $imported=0;
       $report=[];
+      $missing=[];
       foreach($rows as $r){
         $qty=max(0,(float)$r[0]);
         $base=trim($r[1] ?? '');
@@ -44,7 +45,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_mat
         $cur=$pdo->prepare("SELECT id, qty_on_hand, qty_committed FROM inventory_items WHERE sku=? FOR UPDATE");
         $cur->execute([$sku]);
         $item=$cur->fetch();
-        if(!$item){ $pdo->rollBack(); continue; }
+        if(!$item){ $pdo->rollBack(); $missing[]=$sku; continue; }
         $item_id=(int)$item['id'];
         $on_hand_before=(float)$item['qty_on_hand'];
         $committed_before=(float)$item['qty_committed'];
@@ -61,11 +62,16 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_mat
         foreach($report as $line){
           fwrite(STDOUT,$line.PHP_EOL);
         }
+        if($missing){
+          fwrite(STDOUT,'Missing items: '.implode(', ',$missing).PHP_EOL);
+        }
       }
       if($imported===0){
         throw new Exception('No materials were imported');
       }
-      header("Location: /index.php?p=jobs&view=".$job_id."&imp=1"); exit;
+      $redir="/index.php?p=jobs&view=".$job_id."&imp=1";
+      if($missing){ $redir.="&missing=".urlencode(implode(',', $missing)); }
+      header("Location: $redir"); exit;
     }catch(Exception $e){ $err=$e->getMessage(); }
   }
 }
@@ -182,6 +188,9 @@ if(isset($_GET['view'])){
       <?php endif; ?>
       <?php if(isset($_GET['imp'])): ?>
         <div class="alert alert-success">Material import complete.</div>
+      <?php endif; ?>
+      <?php if(isset($_GET['missing'])): ?>
+        <div class="alert alert-warning"><strong>Not committed:</strong> <?= h(str_replace(',', ', ', $_GET['missing'])) ?></div>
       <?php endif; ?>
       <div class="card mb-3"><div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
