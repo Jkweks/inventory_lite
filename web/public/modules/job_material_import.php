@@ -6,7 +6,7 @@
  * @param string[] $requiredSheets     Sheet tab names to read (exact match)
  * @param int      $skipHeaderRows     Skip all rows with 1-based index <= this number
  * @param callable|null $logger        function(string $msg): void for debug logs
- * @return array                       Flat array of [A,B,C] rows across all required sheets
+ * @return array                       Flat array of [qty, base, finish] rows across all required sheets
  * @throws Exception
  */
 function parse_job_materials_xlsx_refined(
@@ -161,13 +161,11 @@ function parse_job_materials_xlsx_refined(
                 continue; // skip header rows
             }
 
-            // Read columns A,B,C only (as in your original)
-            $vals = ['A'=>null,'B'=>null,'C'=>null];
+            // Grab the first three cells in the row regardless of column letter
+            $vals = [];
             foreach ($row->c as $c) {
-                $ref = (string)$c['r'];                 // e.g., "B42"
-                $col = preg_replace('/\d+/', '', $ref); // "B"
-                if (!array_key_exists($col, $vals)) {
-                    continue;
+                if (count($vals) >= 3) {
+                    break;
                 }
 
                 $v = (string)$c->v;
@@ -181,10 +179,11 @@ function parse_job_materials_xlsx_refined(
                     $v = (string)$c->is->t;
                 }
 
-                $vals[$col] = $v;
+                $vals[] = $v;
             }
 
-            $rows[] = [ $vals['A'], $vals['B'], $vals['C'] ];
+            // Pad to ensure at least 3 columns for caller [qty, base, finish]
+            $rows[] = array_pad($vals, 3, null);
             $extracted++;
         }
         $log("Read {$extracted} data row(s) from '{$sheetName}' (skipped <= {$skipHeaderRows}).");
@@ -192,4 +191,20 @@ function parse_job_materials_xlsx_refined(
 
     $zip->close();
     return $rows;
+}
+/**
+ * Wrapper for backwards compatibility.
+ *
+ * @deprecated Use parse_job_materials_xlsx_refined() instead.
+ */
+function parse_job_materials_xlsx(
+    string $path,
+    array $requiredSheets = [
+        'Accessories','Accessories (2)','Accessories (3)',
+        'Stock Lengths','Stock Lengths (2)','Stock Lengths (3)'
+    ],
+    int $skipHeaderRows = 10,
+    ?callable $logger = null
+): array {
+    return parse_job_materials_xlsx_refined($path, $requiredSheets, $skipHeaderRows, $logger);
 }
