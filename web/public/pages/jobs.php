@@ -228,7 +228,7 @@ if(isset($_GET['view'])){
         <form method="post" enctype="multipart/form-data" class="row gy-2 gx-2 align-items-end mt-3">
           <input type="hidden" name="form" value="import_materials">
           <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
-          <div class="col-md-6"><label class="form-label">Import Spreadsheet</label><input type="file" name="xlsx" accept=".xlsx" class="form-control" required></div>
+          <div class="col-md-6"><label class="form-label">Import Spreadsheet</label><input type="file" name="xlsx" accept=".xlsx,.xlsm" class="form-control" required></div>
           <div class="col-md-3"><label class="form-label">&nbsp;</label><button class="btn btn-outline-primary w-100">Import</button></div>
         </form>
         <div class="form-text mt-1">Over-committing is allowed; shortages will be highlighted on the dashboard.</div>

@@ -193,3 +193,19 @@ function parse_job_materials_xlsx_refined(
     $zip->close();
     return $rows;
 }
+/**
+ * Wrapper for backwards compatibility.
+ *
+ * @deprecated Use parse_job_materials_xlsx_refined() instead.
+ */
+function parse_job_materials_xlsx(
+    string $path,
+    array $requiredSheets = [
+        'Accessories','Accessories (2)','Accessories (3)',
+        'Stock Lengths','Stock Lengths (2)','Stock Lengths (3)'
+    ],
+    int $skipHeaderRows = 10,
+    ?callable $logger = null
+): array {
+    return parse_job_materials_xlsx_refined($path, $requiredSheets, $skipHeaderRows, $logger);
+}
