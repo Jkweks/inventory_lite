@@ -31,12 +31,15 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_mat
     require_once __DIR__.'/../modules/job_material_import.php';
     try{
       $rows=parse_job_materials_xlsx($_FILES['xlsx']['tmp_name']);
+      $imported=0;
+      $report=[];
       foreach($rows as $r){
         $qty=max(0,(float)$r[0]);
         $base=trim($r[1] ?? '');
         $finish=strtoupper(trim($r[2] ?? ''));
         if($qty<=0 || $base==='') continue;
         $sku=$base.($finish!==''?('-'.$finish):'');
+        $report[]="$qty x $sku";
         $pdo->beginTransaction();
         $cur=$pdo->prepare("SELECT id, qty_on_hand, qty_committed FROM inventory_items WHERE sku=? FOR UPDATE");
         $cur->execute([$sku]);
@@ -52,6 +55,15 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_mat
         $note=$over_commit>0?('Commit to job (OVER by '.$over_commit.')'):'Commit to job';
         $pdo->prepare("INSERT INTO inventory_txns (item_id,txn_type,qty_delta,ref_table,ref_id,note) VALUES (?,?,?,?,?,?)")->execute([$item_id,'job_release',0,'jobs',$job_id,$note]);
         $pdo->commit();
+        $imported++;
+      }
+      if(PHP_SAPI==='cli'){
+        foreach($report as $line){
+          fwrite(STDOUT,$line.PHP_EOL);
+        }
+      }
+      if($imported===0){
+        throw new Exception('No materials were imported');
       }
       header("Location: /index.php?p=jobs&view=".$job_id."&imp=1"); exit;
     }catch(Exception $e){ $err=$e->getMessage(); }
