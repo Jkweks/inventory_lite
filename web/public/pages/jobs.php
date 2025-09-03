@@ -25,6 +25,39 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='commit_mat
   }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
 }
 
+if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='import_materials'){
+  $job_id=(int)$_POST['job_id'];
+  if(isset($_FILES['xlsx']) && is_uploaded_file($_FILES['xlsx']['tmp_name'])){
+    require_once __DIR__.'/../modules/job_material_import.php';
+    try{
+      $rows=parse_job_materials_xlsx($_FILES['xlsx']['tmp_name']);
+      foreach($rows as $r){
+        $qty=max(0,(float)$r[0]);
+        $base=trim($r[1] ?? '');
+        $finish=strtoupper(trim($r[2] ?? ''));
+        if($qty<=0 || $base==='') continue;
+        $sku=$base.($finish!==''?('-'.$finish):'');
+        $pdo->beginTransaction();
+        $cur=$pdo->prepare("SELECT id, qty_on_hand, qty_committed FROM inventory_items WHERE sku=? FOR UPDATE");
+        $cur->execute([$sku]);
+        $item=$cur->fetch();
+        if(!$item){ $pdo->rollBack(); continue; }
+        $item_id=(int)$item['id'];
+        $on_hand_before=(float)$item['qty_on_hand'];
+        $committed_before=(float)$item['qty_committed'];
+        $available_before=$on_hand_before-$committed_before;
+        $over_commit=max(0,$qty-$available_before);
+        $pdo->prepare("INSERT INTO job_materials (job_id,item_id,qty_committed) VALUES (?,?,?) ON CONFLICT (job_id,item_id) DO UPDATE SET qty_committed=job_materials.qty_committed+EXCLUDED.qty_committed")->execute([$job_id,$item_id,$qty]);
+        $pdo->prepare("UPDATE inventory_items SET qty_committed=qty_committed+? WHERE id=?")->execute([$qty,$item_id]);
+        $note=$over_commit>0?('Commit to job (OVER by '.$over_commit.')'):'Commit to job';
+        $pdo->prepare("INSERT INTO inventory_txns (item_id,txn_type,qty_delta,ref_table,ref_id,note) VALUES (?,?,?,?,?,?)")->execute([$item_id,'job_release',0,'jobs',$job_id,$note]);
+        $pdo->commit();
+      }
+      header("Location: /index.php?p=jobs&view=".$job_id."&imp=1"); exit;
+    }catch(Exception $e){ $err=$e->getMessage(); }
+  }
+}
+
 if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='return_material'){
   $job_id=(int)$_POST['job_id']; $jm_id=(int)$_POST['jm_id']; $qty=max(0,(float)$_POST['qty_return']);
   $pdo->beginTransaction();
@@ -135,6 +168,9 @@ if(isset($_GET['view'])){
       <?php if(isset($_GET['oc']) && (float)$_GET['oc']>0): ?>
         <div class="alert alert-danger"><strong>Over-commit:</strong> You committed <?= number_fmt((float)$_GET['oc']) ?> more than Available. Item availability may be negative until stock arrives or counts are adjusted.</div>
       <?php endif; ?>
+      <?php if(isset($_GET['imp'])): ?>
+        <div class="alert alert-success">Material import complete.</div>
+      <?php endif; ?>
       <div class="card mb-3"><div class="card-body">
         <div class="d-flex justify-content-between align-items-center mb-2">
           <h2 class="h5 mb-0">Job <?= h($view_job['job_number']) ?> <small class="text-secondary"><?= h($view_job['name']) ?></small></h2>
@@ -176,6 +212,12 @@ if(isset($_GET['view'])){
           </div>
           <div class="col-md-3"><label class="form-label">Qty</label><input type="number" step="0.001" name="qty_committed" class="form-control" required></div>
           <div class="col-md-3"><button class="btn btn-success w-100">Commit to Job</button></div>
+        </form>
+        <form method="post" enctype="multipart/form-data" class="row gy-2 gx-2 align-items-end mt-3">
+          <input type="hidden" name="form" value="import_materials">
+          <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
+          <div class="col-md-6"><label class="form-label">Import Spreadsheet</label><input type="file" name="xlsx" accept=".xlsx" class="form-control" required></div>
+          <div class="col-md-3"><label class="form-label">&nbsp;</label><button class="btn btn-outline-primary w-100">Import</button></div>
         </form>
         <div class="form-text mt-1">Over-committing is allowed; shortages will be highlighted on the dashboard.</div>
       </div></div>
