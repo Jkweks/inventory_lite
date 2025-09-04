@@ -82,7 +82,7 @@ if($variantView==='grouped'){
   </div>
 </div>
 <?php if(isset($_GET['deleted'])): ?><div class="alert alert-success">Item deleted</div><?php endif; ?>
-<div class="row g-3"><div class="col-lg-8 mx-auto"><div class="card"><div class="card-body"><h2 class="h5">All Items</h2>
+<div class="card"><div class="card-body"><h2 class="h5">All Items</h2>
 <div class="table-responsive"><table class="table table-sm table-striped align-middle">
 <thead><tr><th><?= sort_link('category','Category',$sort,$dir) ?></th><th><?= sort_link('item_type','Type',$sort,$dir) ?></th><th><?= sort_link('sku','SKU',$sort,$dir) ?></th><th>Img</th><th><?= sort_link('name','Name',$sort,$dir) ?></th><th class="text-end"><?= sort_link('qty_on_hand','On Hand',$sort,$dir) ?></th><th class="text-end"><?= sort_link('qty_committed','Committed',$sort,$dir) ?></th><th>Actions</th></tr></thead>
 <tbody><?php foreach($items as $it): ?><tr>
@@ -95,7 +95,7 @@ if($variantView==='grouped'){
   <a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&id=<?= $it['id'] ?>">Edit</a>
 </td>
 </tr><?php endforeach; ?>
-</tbody></table></div></div></div></div></div>
+</tbody></table></div></div></div>
 
 <div class="modal fade" id="addItemModal" tabindex="-1" aria-labelledby="addItemModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
