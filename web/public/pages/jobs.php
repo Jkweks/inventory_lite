@@ -162,7 +162,18 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='complete_j
     header("Location: /index.php?p=jobs&view=".$job_id."&done=1"); exit;
   }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
 }
-$items=$pdo->query("SELECT id, sku, name FROM inventory_items WHERE archived=false ORDER BY sku")->fetchAll();
+$items_query = "SELECT id, sku, name FROM inventory_items WHERE archived=false AND sku NOT IN (SELECT parent_sku FROM inventory_items WHERE parent_sku IS NOT NULL) ORDER BY sku";
+if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='undo_complete_job'){
+  $job_id=(int)$_POST['job_id'];
+  $pdo->prepare("UPDATE jobs SET status='active', date_completed=NULL WHERE id=?")->execute([$job_id]);
+  header("Location: /index.php?p=jobs&view=".$job_id); exit;
+}
+if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='delete_job'){
+  $job_id=(int)$_POST['job_id'];
+  $pdo->prepare("DELETE FROM jobs WHERE id=?")->execute([$job_id]);
+  header("Location: /index.php?p=jobs&deleted=1"); exit;
+}
+$items=$pdo->query($items_query)->fetchAll();
 $show_archived=isset($_GET['show_archived']);
 $job_stmt=$pdo->prepare("SELECT * FROM jobs".($show_archived?"":" WHERE archived=false")." ORDER BY created_at DESC LIMIT 50");
 $job_stmt->execute();
@@ -250,6 +261,11 @@ if(isset($_GET['view'])){
                 <button class="btn btn-outline-secondary btn-sm">Unarchive</button>
               </form>
             <?php endif; ?>
+            <form method="post" class="d-inline ms-2" onsubmit="return confirm('Delete this job?');">
+              <input type="hidden" name="form" value="delete_job">
+              <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
+              <button class="btn btn-danger btn-sm">Delete</button>
+            </form>
           </div>
         </div>
         <form method="post" class="row gy-2 gx-2 align-items-end">
@@ -274,12 +290,18 @@ if(isset($_GET['view'])){
       </div></div>
       <div class="card mb-3"><div class="card-body">
         <h3 class="h6">Work Orders</h3>
-        <ul class="mb-3">
-          <?php foreach($work_orders as $wo): ?>
-            <li><a href="/index.php?p=work_order&wo=<?= $wo['id'] ?>"><?= h($wo['wo_number']) ?></a> <?= date_fmt($wo['date_released']) ?></li>
-          <?php endforeach; ?>
-          <?php if(!$work_orders): ?><li class="text-secondary">None</li><?php endif; ?>
-        </ul>
+        <div class="table-responsive mb-3"><table class="table table-sm align-middle">
+          <thead><tr><th>WO #</th><th>Date Released</th><th class="text-end">Actions</th></tr></thead>
+          <tbody>
+            <?php foreach($work_orders as $wo): ?>
+            <tr>
+              <td><a href="/index.php?p=work_order&wo=<?= $wo['id'] ?>"><?= h($wo['wo_number']) ?></a></td>
+              <td><?= date_fmt($wo['date_released']) ?></td>
+              <td class="text-end"><a class="btn btn-sm btn-outline-secondary" href="/index.php?p=work_order&wo=<?= $wo['id'] ?>">Edit</a></td>
+            </tr>
+            <?php endforeach; ?>
+            <?php if(!$work_orders): ?><tr><td colspan="3" class="text-secondary">None</td></tr><?php endif; ?>
+          </tbody></table></div>
         <form method="post" class="row gy-2 gx-2 align-items-end">
           <input type="hidden" name="form" value="create_work_order">
           <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
@@ -342,7 +364,12 @@ if(isset($_GET['view'])){
         <?php if($view_job['status']!=='complete'): ?>
           <button class="btn btn-primary" form="completeForm">Complete Job</button>
         <?php else: ?>
-          <div class="alert alert-success mt-3 mb-0">Job completed on <?= date_fmt($view_job['date_completed']) ?>.</div>
+          <div class="alert alert-success mt-3">Job completed on <?= date_fmt($view_job['date_completed']) ?>.</div>
+          <form method="post" class="mt-2">
+            <input type="hidden" name="form" value="undo_complete_job">
+            <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
+            <button class="btn btn-warning">Undo Complete</button>
+          </form>
         <?php endif; ?>
       </div></div>
       <div class="card mt-3"><div class="card-body">

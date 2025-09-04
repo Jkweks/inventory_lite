@@ -73,7 +73,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
   }
 }
 
-$items=$pdo->query("SELECT id, sku, name FROM inventory_items WHERE archived=false ORDER BY sku")->fetchAll();
+$items=$pdo->query("SELECT id, sku, name FROM inventory_items WHERE archived=false AND sku NOT IN (SELECT parent_sku FROM inventory_items WHERE parent_sku IS NOT NULL) ORDER BY sku")->fetchAll();
 $m=$pdo->prepare("SELECT jm.id as jm_id, i.sku, i.name, i.unit, jm.qty_committed, jm.qty_used, i.id as item_id FROM job_materials jm JOIN inventory_items i ON i.id=jm.item_id WHERE jm.job_id=? ORDER BY i.sku");
 $m->execute([$job_id]); $materials=$m->fetchAll();
 $c=$pdo->prepare("SELECT jc.qty_used, jc.date_used, i.sku, i.name FROM job_consumptions jc JOIN inventory_items i ON i.id=jc.item_id WHERE jc.work_order_id=? ORDER BY jc.date_used");
