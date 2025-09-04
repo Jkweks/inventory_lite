@@ -275,7 +275,7 @@ if(isset($_GET['view'])){
         <h3 class="h6">Work Orders</h3>
         <ul class="mb-3">
           <?php foreach($work_orders as $wo): ?>
-            <li><?= h($wo['wo_number']) ?> <?= date_fmt($wo['date_released']) ?></li>
+            <li><a href="/index.php?p=work_order&wo=<?= $wo['id'] ?>"><?= h($wo['wo_number']) ?></a> <?= date_fmt($wo['date_released']) ?></li>
           <?php endforeach; ?>
           <?php if(!$work_orders): ?><li class="text-secondary">None</li><?php endif; ?>
         </ul>
