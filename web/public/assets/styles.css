@@ -1,1 +1,3 @@
 .table th,.table td{vertical-align:middle}.card{border-radius:1rem}.btn-round{border-radius:9999px}.badge-short{background-color:#842029}.badge-over{background-color:#944}
+[data-bs-theme=dark] .table thead th{background-color:var(--bs-tertiary-bg);color:var(--bs-body-color)}
+[data-bs-theme=dark] .table-light,[data-bs-theme=dark] .table-light>th,[data-bs-theme=dark] .table-light>td,[data-bs-theme=dark] .table-secondary,[data-bs-theme=dark] .table-secondary>th,[data-bs-theme=dark] .table-secondary>td{background-color:var(--bs-tertiary-bg)!important;color:var(--bs-body-color)!important}

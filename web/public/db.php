@@ -10,4 +10,19 @@ function db() {
   return $pdo;
 }
 function h($s){ return htmlspecialchars($s ?? '', ENT_QUOTES, 'UTF-8'); }
-function number_fmt($n){ if ($n===null) return '0'; return rtrim(rtrim(number_format((float)$n,3,'.',''), '0'), '.'); }
+function number_fmt($n){
+  if ($n === null) return '0';
+  return number_format((int)round($n), 0, '.', '');
+}
+function money_fmt($n){
+  if ($n === null) return '0.00';
+  return number_format((float)$n, 2, '.', '');
+}
+function date_fmt($d){
+  if (!$d) return '';
+  return date('m/d/Y', strtotime($d));
+}
+function datetime_fmt($d){
+  if (!$d) return '';
+  return date('m/d/Y H:i', strtotime($d));
+}

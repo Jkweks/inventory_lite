@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv'])) {
       $data = array_combine($headers, $row);
       $sku = trim($data['sku'] ?? $data['part number'] ?? '');
       $loc = trim($data['location'] ?? '');
-      $count = (float)($data['count'] ?? $data['counted qty'] ?? 0);
+      $count = (int)($data['count'] ?? $data['counted qty'] ?? 0);
       if ($sku === '' || $loc === '' || !is_numeric($count)) {
         continue;
       }
@@ -23,12 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['csv'])) {
         continue;
       }
       $item_id = (int)$item['id'];
-      $totals[$item_id] = ($totals[$item_id] ?? 0) + $count;
+        $totals[$item_id] = ($totals[$item_id] ?? 0) + $count;
       $locStmt = $pdo->prepare('SELECT qty_on_hand FROM item_locations WHERE item_id = ? AND location = ? FOR UPDATE');
       $locStmt->execute([$item_id, $loc]);
-      $locRow = $locStmt->fetch();
-      $prev_loc = $locRow ? (float)$locRow['qty_on_hand'] : 0.0;
-      $delta = $count - $prev_loc;
+        $locRow = $locStmt->fetch();
+        $prev_loc = $locRow ? (int)$locRow['qty_on_hand'] : 0;
+        $delta = $count - $prev_loc;
       $deltas[$item_id] = ($deltas[$item_id] ?? 0) + $delta;
       if ($locRow) {
         $pdo->prepare('UPDATE item_locations SET qty_on_hand = ? WHERE item_id = ? AND location = ?')

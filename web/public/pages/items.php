@@ -32,18 +32,19 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
         $image_url,
         (float)$_POST['cost_usd'],
         $_POST['sage_id']?:null,
-        (float)$_POST['min_qty']
+        (int)$_POST['min_qty']
       ]);
       $item_id=$pdo->lastInsertId();
       $total=0;
       $locations=preg_split('/\r?\n/', trim($_POST['locations']??''));
-      foreach($locations as $line){
-        $line=trim($line); if($line==='') continue;
-        if(!preg_match('/^([A-Z]\.\d+\.\d+)=(\d+(?:\.\d+)?)$/',$line,$m)) continue;
-        $pdo->prepare("INSERT INTO item_locations (item_id,location,qty_on_hand) VALUES (?,?,?)")->execute([$item_id,$m[1],$m[2]]);
-        $total+=$m[2];
-      }
-      $pdo->prepare("UPDATE inventory_items SET qty_on_hand=? WHERE id=?")->execute([$total,$item_id]);
+        foreach($locations as $line){
+          $line=trim($line); if($line==='') continue;
+          if(!preg_match('/^([A-Z]\.\d+\.\d+)=(\d+)$/',$line,$m)) continue;
+          $qty=(int)$m[2];
+          $pdo->prepare("INSERT INTO item_locations (item_id,location,qty_on_hand) VALUES (?,?,?)")->execute([$item_id,$m[1],$qty]);
+          $total+=$qty;
+        }
+        $pdo->prepare("UPDATE inventory_items SET qty_on_hand=? WHERE id=?")->execute([$total,$item_id]);
       $pdo->commit();
       header("Location: /index.php?p=items&created=1"); exit;
     }catch(Exception $e){ $pdo->rollBack(); throw $e; }
@@ -119,7 +120,7 @@ if($variantView==='grouped'){
           <div class="mb-2"><label class="form-label">Cost (USD)</label><input name="cost_usd" type="number" step="0.01" class="form-control" value="0"></div>
           <div class="mb-2"><label class="form-label">Sage ID</label><input name="sage_id" class="form-control"></div>
           <div class="mb-2"><label class="form-label">Locations (A.1.2=qty per line)</label><textarea name="locations" class="form-control" rows="3" placeholder="A.1.2=5"></textarea></div>
-          <div class="mb-2"><label class="form-label">Min Qty (optional)</label><input name="min_qty" type="number" step="0.001" class="form-control" value="0"></div>
+          <div class="mb-2"><label class="form-label">Min Qty (optional)</label><input name="min_qty" type="number" step="1" class="form-control" value="0"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

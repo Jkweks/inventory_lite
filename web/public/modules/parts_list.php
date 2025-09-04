@@ -13,7 +13,7 @@ if($variantView==='grouped'){
 <div class="table-responsive"><table class="table table-striped table-hover align-middle">
 <thead><tr><th>Category</th><th>Type</th><th>SKU</th><th>Name</th><th class="text-end">On Hand</th><th class="text-end">Committed</th><th class="text-end">Available</th><th>Actions</th></tr></thead>
 <tbody>
-<?php foreach($items as $it): $short_onhand=((float)$it['qty_on_hand'])<0; $short_avail=((float)$it['available'])<0; ?>
+<?php foreach($items as $it): $short_onhand=((int)$it['qty_on_hand'])<0; $short_avail=((int)$it['available'])<0; ?>
 <tr class="<?= ($short_onhand||$short_avail)?'table-danger':'' ?>">
 <td><?= h($it['category']) ?></td>
 <td><?= h($it['item_type']) ?></td>
@@ -32,7 +32,7 @@ if($variantView==='grouped'){
 <div class="table-responsive"><table class="table table-striped table-hover align-middle">
 <thead><tr><th>SKU</th><th>Name</th><th class="text-end">On Hand</th><th class="text-end">Committed</th><th class="text-end">Available</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>
-<?php $curCat=null; $curType=null; foreach($items as $it): $short_onhand=((float)$it['qty_on_hand'])<0; $short_avail=((float)$it['available'])<0; ?>
+<?php $curCat=null; $curType=null; foreach($items as $it): $short_onhand=((int)$it['qty_on_hand'])<0; $short_avail=((int)$it['available'])<0; ?>
 <?php if($it['category']!==$curCat){ $curCat=$it['category']; $curType=null; ?>
 <tr class="table-secondary"><th colspan="7"><?= h($curCat) ?></th></tr>
 <?php } ?>
