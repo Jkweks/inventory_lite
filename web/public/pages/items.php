@@ -73,6 +73,28 @@ if($variantView==='grouped'){
 }else{
   $items=$pdo->query("SELECT * FROM inventory_items WHERE archived=false AND sku NOT IN (SELECT parent_sku FROM inventory_items WHERE parent_sku IS NOT NULL) ORDER BY $sort $dir, sku ASC")->fetchAll();
 }
+
+// Fetch job commitments for each item or grouped SKU
+$jobMap=[];
+if($items){
+  if($variantView==='grouped'){
+    $skus=array_column($items,'sku');
+    $ph=implode(',',array_fill(0,count($skus),'?'));
+    $stmt=$pdo->prepare("SELECT COALESCE(i.parent_sku,i.sku) AS base_sku, j.job_number, SUM(jm.qty_committed) AS qty FROM job_materials jm JOIN inventory_items i ON i.id=jm.item_id JOIN jobs j ON j.id=jm.job_id WHERE COALESCE(i.parent_sku,i.sku) IN ($ph) GROUP BY base_sku, j.job_number ORDER BY j.job_number");
+    $stmt->execute($skus);
+    while($row=$stmt->fetch(PDO::FETCH_ASSOC)){
+      $jobMap[$row['base_sku']][]=['job'=>$row['job_number'],'qty'=>$row['qty']];
+    }
+  }else{
+    $ids=array_column($items,'id');
+    $ph=implode(',',array_fill(0,count($ids),'?'));
+    $stmt=$pdo->prepare("SELECT jm.item_id, j.job_number, jm.qty_committed AS qty FROM job_materials jm JOIN jobs j ON j.id=jm.job_id WHERE jm.item_id IN ($ph) ORDER BY j.job_number");
+    $stmt->execute($ids);
+    while($row=$stmt->fetch(PDO::FETCH_ASSOC)){
+      $jobMap[$row['item_id']][]=['job'=>$row['job_number'],'qty'=>$row['qty']];
+    }
+  }
+}
 ?>
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h3 mb-0">Items</h1>
@@ -90,7 +112,17 @@ if($variantView==='grouped'){
 <td><?php if($it['image_url']): ?><img src="<?= h($it['image_url']) ?>" alt="" style="width:32px;height:32px;object-fit:cover;"><?php endif; ?></td>
 <td><?= h($it['name']) ?></td>
 <td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td>
-<td class="text-end"><?= number_fmt($it['qty_committed']) ?></td>
+<?php $key=$variantView==='grouped'?$it['sku']:$it['id']; ?>
+<td class="text-end">
+  <?= number_fmt($it['qty_committed']) ?>
+  <?php if(!empty($jobMap[$key])): ?>
+    <div class="small text-muted text-start">
+      <?php foreach($jobMap[$key] as $jm): ?>
+        <div><?= h($jm['job']) ?> (<?= number_fmt($jm['qty']) ?>)</div>
+      <?php endforeach; ?>
+    </div>
+  <?php endif; ?>
+</td>
 <td>
   <a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&id=<?= $it['id'] ?>">Edit</a>
 </td>
