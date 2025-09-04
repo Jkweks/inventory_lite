@@ -8,7 +8,7 @@ if (!in_array($report, $allowed_reports, true)) {
     $report = 'full';
 }
 header('Content-Type: text/csv');
-header('Content-Disposition: attachment; filename="inventory_' . $report . '_' . date('Ymd_His') . '.csv"');
+  header('Content-Disposition: attachment; filename="inventory_' . $report . '_' . date('m-d-Y_H-i') . '.csv"');
 $out=fopen('php://output','w');
 if($report==='full'){
   fputcsv($out,['SKU','Name','Unit','On Hand','Committed','Available']);

@@ -87,9 +87,9 @@ switch ($type) {
       <td><?= h($it['sku']) ?></td>
       <td><?= h($it['name']) ?></td>
       <td><?= h($it['unit']) ?></td>
-      <td class="text-end">$<?= number_fmt($it['cost_usd']) ?></td>
-      <td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td>
-      <td class="text-end">$<?= number_fmt($it['total']) ?></td>
+        <td class="text-end">$<?= money_fmt($it['cost_usd']) ?></td>
+        <td class="text-end"><?= number_fmt($it['qty_on_hand']) ?></td>
+        <td class="text-end">$<?= money_fmt($it['total']) ?></td>
     </tr><?php endforeach; ?></tbody></table></div>
 </div></div>
 <?php else: ?>
