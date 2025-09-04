@@ -30,8 +30,9 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='commit_mat
     $note=$over_commit>0?('Commit to job (OVER by '.$over_commit.')'):'Commit to job';
     $pdo->prepare("INSERT INTO inventory_txns (item_id,txn_type,qty_delta,ref_table,ref_id,note) VALUES (?,?,?,?,?,?)")
         ->execute([$item_id,'job_release',0,'jobs',$job_id,$note]);
-    $pdo->commit(); $redir="/index.php?p=jobs&view={$job_id}"+($over_commit>0?("&oc=".$over_commit):"")+"&ok=1";
-    header("Location: ".$redir); exit;
+    $pdo->commit();
+    $redir = "/index.php?p=jobs&view={$job_id}" . ($over_commit > 0 ? ("&oc=" . $over_commit) : "") . "&ok=1";
+    header("Location: " . $redir); exit;
   }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
 }
 
