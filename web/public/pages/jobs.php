@@ -5,6 +5,16 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='create_job
   $stmt->execute([$_POST['job_number'],$_POST['name']?:null,'bid',$_POST['date_released']?:null,$_POST['notes']?:null]);
   header("Location: /index.php?p=jobs&job=".urlencode($_POST['job_number'])); exit;
 }
+if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='create_work_order'){
+  $job_id=(int)$_POST['job_id'];
+  $wo_number=trim($_POST['wo_number'] ?? '');
+  $date_released=$_POST['date_released']?:null;
+  if($wo_number!==''){
+    $stmt=$pdo->prepare("INSERT INTO work_orders (job_id,wo_number,date_released) VALUES (?,?,?)");
+    $stmt->execute([$job_id,$wo_number,$date_released]);
+  }
+  header("Location: /index.php?p=jobs&view=".$job_id); exit;
+}
 if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='commit_material'){
   $job_id=(int)$_POST['job_id']; $item_id=(int)$_POST['item_id']; $qty=max(0,(float)$_POST['qty_committed']);
   $pdo->beginTransaction();
@@ -96,6 +106,30 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='return_mat
   }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
 }
 
+if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='consume_material'){
+  $job_id=(int)$_POST['job_id']; $jm_id=(int)$_POST['jm_id']; $qty=max(0,(float)$_POST['qty_consume']);
+  $work_order_id=$_POST['work_order_id']? (int)$_POST['work_order_id'] : null;
+  $pdo->beginTransaction();
+  try{
+    $cur=$pdo->prepare("SELECT jm.item_id, jm.qty_committed FROM job_materials jm WHERE jm.id=? AND jm.job_id=? FOR UPDATE");
+    $cur->execute([$jm_id,$job_id]);
+    $row=$cur->fetch(); if(!$row) throw new Exception('Material not found');
+    $committed=(float)$row['qty_committed'];
+    if($qty>$committed) $qty=$committed;
+    $pdo->prepare("UPDATE job_materials SET qty_committed=qty_committed-?, qty_used=qty_used+? WHERE id=?")
+        ->execute([$qty,$qty,$jm_id]);
+    $pdo->prepare("UPDATE inventory_items SET qty_on_hand=qty_on_hand-?, qty_committed=qty_committed-? WHERE id=?")
+        ->execute([$qty,$qty,$row['item_id']]);
+    $pdo->prepare("INSERT INTO job_consumptions (job_id,item_id,work_order_id,qty_used) VALUES (?,?,?,?)")
+        ->execute([$job_id,$row['item_id'],$work_order_id,$qty]);
+    if($qty>0){
+      $pdo->prepare("INSERT INTO inventory_txns (item_id,txn_type,qty_delta,ref_table,ref_id,note) VALUES (?,?,?,?,?,?)")
+          ->execute([$row['item_id'],'job_consume',-$qty,'jobs',$job_id,'Consumed by job']);
+    }
+    $pdo->commit(); header("Location: /index.php?p=jobs&view=".$job_id); exit;
+  }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
+}
+
 if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='update_status'){
   $job_id=(int)$_POST['job_id'];
   $new_status=$_POST['status'] ?? 'bid';
@@ -116,21 +150,10 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='complete_j
   $job_id=(int)$_POST['job_id'];
   $pdo->beginTransaction();
   try{
-    $materials=$pdo->prepare("SELECT jm.id, jm.item_id, jm.qty_committed, jm.qty_used FROM job_materials jm WHERE jm.job_id=? FOR UPDATE");
+    $materials=$pdo->prepare("SELECT qty_committed FROM job_materials WHERE job_id=? FOR UPDATE");
     $materials->execute([$job_id]);
-    $rows=$materials->fetchAll();
-    foreach($rows as $r){
-      $committed=(float)$r['qty_committed'];
-      $used=isset($_POST['used'][$r['id']])?max(0,(float)$_POST['used'][$r['id']]):0;
-      if($used!=$committed){ throw new Exception('All items must be returned before completing job'); }
-      $pdo->prepare("UPDATE job_materials SET qty_used=qty_used+?, qty_committed=qty_committed-? WHERE id=?")
-          ->execute([$used,$used,$r['id']]);
-      $pdo->prepare("UPDATE inventory_items SET qty_on_hand=qty_on_hand-?, qty_committed=qty_committed-? WHERE id=?")
-          ->execute([$used,$used,$r['item_id']]);
-      if($used>0){
-        $pdo->prepare("INSERT INTO inventory_txns (item_id,txn_type,qty_delta,ref_table,ref_id,note) VALUES (?,?,?,?,?,?)")
-            ->execute([$r['item_id'],'job_complete',-$used,'jobs',$job_id,'Consumed by job']);
-      }
+    foreach($materials as $r){
+      if((float)$r['qty_committed']>0){ throw new Exception('All items must be consumed or returned before completing job'); }
     }
     $pdo->prepare("UPDATE jobs SET status='complete', date_completed=CURRENT_DATE WHERE id=?")
         ->execute([$job_id]);
@@ -144,11 +167,17 @@ $job_stmt=$pdo->prepare("SELECT * FROM jobs".($show_archived?"":" WHERE archived
 $job_stmt->execute();
 $jobs=$job_stmt->fetchAll();
 $view_job=null;
+$work_orders=[];
+$consumptions=[];
 if(isset($_GET['view'])){
   $jid=(int)$_GET['view']; $st=$pdo->prepare("SELECT * FROM jobs WHERE id=?"); $st->execute([$jid]); $view_job=$st->fetch();
   if($view_job){
     $m=$pdo->prepare("SELECT jm.id as jm_id, i.sku, i.name, i.unit, jm.qty_committed, jm.qty_used, i.id as item_id FROM job_materials jm JOIN inventory_items i ON i.id=jm.item_id WHERE jm.job_id=? ORDER BY i.sku");
     $m->execute([$jid]); $materials=$m->fetchAll();
+    $wo=$pdo->prepare("SELECT id, wo_number, date_released FROM work_orders WHERE job_id=? ORDER BY date_released, id");
+    $wo->execute([$jid]); $work_orders=$wo->fetchAll();
+    $c=$pdo->prepare("SELECT jc.qty_used, jc.date_used, i.sku, i.name, wo.wo_number FROM job_consumptions jc JOIN inventory_items i ON i.id=jc.item_id LEFT JOIN work_orders wo ON wo.id=jc.work_order_id WHERE jc.job_id=? ORDER BY jc.date_used");
+    $c->execute([$jid]); $consumptions=$c->fetchAll();
   }
 }
 ?>
@@ -242,6 +271,22 @@ if(isset($_GET['view'])){
         </form>
         <div class="form-text mt-1">Over-committing is allowed; shortages will be highlighted on the dashboard.</div>
       </div></div>
+      <div class="card mb-3"><div class="card-body">
+        <h3 class="h6">Work Orders</h3>
+        <ul class="mb-3">
+          <?php foreach($work_orders as $wo): ?>
+            <li><?= h($wo['wo_number']) ?> <?= h($wo['date_released']) ?></li>
+          <?php endforeach; ?>
+          <?php if(!$work_orders): ?><li class="text-secondary">None</li><?php endif; ?>
+        </ul>
+        <form method="post" class="row gy-2 gx-2 align-items-end">
+          <input type="hidden" name="form" value="create_work_order">
+          <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
+          <div class="col-md-5"><label class="form-label">WO #</label><input name="wo_number" class="form-control" required></div>
+          <div class="col-md-5"><label class="form-label">Release Date</label><input type="date" name="date_released" class="form-control"></div>
+          <div class="col-md-2"><label class="form-label">&nbsp;</label><button class="btn btn-outline-secondary w-100">Add</button></div>
+        </form>
+      </div></div>
       <div class="card"><div class="card-body">
         <h3 class="h6">Materials</h3>
         <form id="completeForm" method="post">
@@ -249,12 +294,32 @@ if(isset($_GET['view'])){
           <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
         </form>
         <div class="table-responsive"><table class="table table-sm table-striped align-middle">
-          <thead><tr><th>SKU</th><th>Name</th><th class="text-end">Committed</th><th class="text-end">Used</th><th class="text-end">Return</th></tr></thead>
+          <thead><tr><th>SKU</th><th>Name</th><th class="text-end">Committed</th><th class="text-end">Used</th><th class="text-end">Consume</th><th class="text-end">Return</th></tr></thead>
           <tbody><?php foreach($materials as $m): ?>
             <tr>
               <td><?= h($m['sku']) ?></td><td><?= h($m['name']) ?></td>
               <td class="text-end"><?= number_fmt($m['qty_committed']) ?> <span class="text-secondary">(<?= h($m['unit']) ?>)</span></td>
-              <td class="text-end"><input type="number" step="0.001" class="form-control form-control-sm text-end" name="used[<?= $m['jm_id'] ?>]" value="<?= number_fmt($m['qty_committed']) ?>" form="completeForm"></td>
+              <td class="text-end"><?= number_fmt($m['qty_used']) ?></td>
+              <td class="text-end">
+                <?php if($view_job['status']!=='complete'): ?>
+                  <form method="post" class="d-inline">
+                    <input type="hidden" name="form" value="consume_material">
+                    <input type="hidden" name="job_id" value="<?= $view_job['id'] ?>">
+                    <input type="hidden" name="jm_id" value="<?= $m['jm_id'] ?>">
+                    <div class="input-group input-group-sm">
+                      <input type="number" step="0.001" name="qty_consume" class="form-control form-control-sm" style="width:6rem">
+                      <?php if($work_orders): ?>
+                        <select name="work_order_id" class="form-select form-select-sm">
+                          <option value="">WO</option>
+                          <?php foreach($work_orders as $wo): ?><option value="<?= $wo['id'] ?>"><?= h($wo['wo_number']) ?></option><?php endforeach; ?>
+                        </select>
+                      <?php endif; ?>
+                      <button class="btn btn-outline-primary">Use</button>
+                    </div>
+                  </form>
+                <?php else: ?>-
+                <?php endif; ?>
+              </td>
               <td class="text-end">
                 <?php if($view_job['status']!=='complete'): ?>
                   <form method="post" class="d-inline">
@@ -278,6 +343,18 @@ if(isset($_GET['view'])){
         <?php else: ?>
           <div class="alert alert-success mt-3 mb-0">Job completed on <?= h($view_job['date_completed']) ?>.</div>
         <?php endif; ?>
+      </div></div>
+      <div class="card mt-3"><div class="card-body">
+        <h3 class="h6">Consumption Log</h3>
+        <div class="table-responsive"><table class="table table-sm table-striped">
+          <thead><tr><th>Date</th><th>WO</th><th>SKU</th><th class="text-end">Qty</th></tr></thead>
+          <tbody><?php foreach($consumptions as $c): ?><tr>
+            <td><?= h($c['date_used']) ?></td>
+            <td><?= h($c['wo_number']) ?></td>
+            <td><?= h($c['sku']) ?></td>
+            <td class="text-end"><?= number_fmt($c['qty_used']) ?></td>
+          </tr><?php endforeach; ?></tbody>
+        </table></div>
       </div></div>
     <?php else: ?><div class="alert alert-info">Select a job from the left to view/allocate materials.</div><?php endif; ?>
   </div>
