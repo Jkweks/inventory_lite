@@ -139,6 +139,7 @@ if($_SERVER['REQUEST_METHOD']==='POST' && ( $_POST['form'] ?? '' )==='complete_j
   }catch(Exception $e){ $pdo->rollBack(); $err=$e->getMessage(); }
 }
 $items=$pdo->query("SELECT id, sku, name FROM inventory_items WHERE archived=false ORDER BY sku")->fetchAll();
+$selected_item_id=isset($_GET['item_id'])?(int)$_GET['item_id']:0;
 $show_archived=isset($_GET['show_archived']);
 $job_stmt=$pdo->prepare("SELECT * FROM jobs".($show_archived?"":" WHERE archived=false")." ORDER BY created_at DESC LIMIT 50");
 $job_stmt->execute();
@@ -228,7 +229,7 @@ if(isset($_GET['view'])){
           <div class="col-md-6"><label class="form-label">Item</label>
             <select name="item_id" class="form-select" required>
               <option value="">Select item…</option>
-              <?php foreach($items as $it): ?><option value="<?= $it['id'] ?>"><?= h($it['sku']) ?> — <?= h($it['name']) ?></option><?php endforeach; ?>
+              <?php foreach($items as $it): ?><option value="<?= $it['id'] ?>" <?= $selected_item_id===$it['id']?'selected':'' ?>><?= h($it['sku']) ?> — <?= h($it['name']) ?></option><?php endforeach; ?>
             </select>
           </div>
           <div class="col-md-3"><label class="form-label">Qty</label><input type="number" step="0.001" name="qty_committed" class="form-control" required></div>
