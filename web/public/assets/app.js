@@ -11,6 +11,13 @@
     themeSwitch.addEventListener('change', ()=> setTheme(themeSwitch.checked ? 'light' : 'dark'));
   }
 
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.modal').forEach(m => {
+      m.classList.remove('show');
+      m.style.display = 'none';
+    });
+  });
+
   window.exportTableToPDF = function(tableId, title){
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({orientation:'landscape', unit:'pt', format:'letter'});

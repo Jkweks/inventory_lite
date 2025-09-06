@@ -7,6 +7,7 @@
 table.report-preview th, table.report-preview td { border:1px solid #ccc; padding:4px; }
 table.report-preview th { background:#eee; }</textarea>
     <button class="btn btn-primary mt-2" onclick="updatePreview()">Update Preview</button>
+    <button class="btn btn-outline-secondary mt-2 ms-2" onclick="resetDesigner()">Start Over</button>
   </div>
   <div class="col-md-6">
     <h2 class="h6">Preview</h2>
@@ -20,9 +21,24 @@ table.report-preview th { background:#eee; }</textarea>
 </div>
 <style id="designerStyles"></style>
 <script>
+const defaultCSS = `table.report-preview { width:100%; border-collapse:collapse; }
+table.report-preview th, table.report-preview td { border:1px solid #ccc; padding:4px; }
+table.report-preview th { background:#eee; }`;
+const defaultTable = `<table class="report-preview">
+  <thead><tr><th>SKU</th><th>Name</th><th>Qty</th></tr></thead>
+  <tbody><tr><td>ABC123</td><td>Sample Part</td><td>10</td></tr></tbody>
+</table>`;
+
 function updatePreview(){
   document.getElementById('designerStyles').textContent = document.getElementById('cssInput').value;
 }
+
+function resetDesigner(){
+  document.getElementById('cssInput').value = defaultCSS;
+  document.getElementById('preview').innerHTML = defaultTable;
+  updatePreview();
+}
+
 updatePreview();
 </script>
 
