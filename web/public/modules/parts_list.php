@@ -24,7 +24,7 @@ if($variantView==='grouped'){
 <td class="text-end"><?= number_fmt($it['available']) ?></td>
 <td><a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&id=<?= $it['id'] ?>">Edit</a>
 <a class="btn btn-sm btn-outline-primary" href="/index.php?p=cycle_counts&item_id=<?= $it['id'] ?>">Count</a>
-<a class="btn btn-sm btn-outline-success" href="/index.php?p=jobs&action=add_material&item_id=<?= $it['id'] ?>">Commit</a></td>
+<a class="btn btn-sm btn-outline-success" href="/index.php?p=jobs&item_id=<?= $it['id'] ?>">Commit</a></td>
 </tr>
 <?php endforeach; ?>
 </tbody></table></div>
@@ -48,7 +48,7 @@ if($variantView==='grouped'){
 <td><?php if($short_onhand): ?><span class="badge badge-short">NEG On Hand</span><?php endif; ?><?php if($short_avail): ?><span class="badge text-bg-danger">Over-committed</span><?php endif; ?></td>
 <td><a class="btn btn-sm btn-outline-secondary" href="/index.php?p=item&id=<?= $it['id'] ?>">Edit</a>
 <a class="btn btn-sm btn-outline-primary" href="/index.php?p=cycle_counts&item_id=<?= $it['id'] ?>">Count</a>
-<a class="btn btn-sm btn-outline-success" href="/index.php?p=jobs&action=add_material&item_id=<?= $it['id'] ?>">Commit</a></td>
+<a class="btn btn-sm btn-outline-success" href="/index.php?p=jobs&item_id=<?= $it['id'] ?>">Commit</a></td>
 </tr>
 <?php endforeach; ?>
 </tbody></table></div>
